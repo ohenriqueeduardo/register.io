@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -88,6 +88,8 @@ const mockEmpresas = [
 ];
 
 const Empresas = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -173,11 +175,17 @@ const Empresas = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48 rounded-xl p-2 shadow-xl border-slate-200">
-                        <DropdownMenuItem className="rounded-lg gap-2 py-2.5 cursor-pointer">
+                        <DropdownMenuItem 
+                          className="rounded-lg gap-2 py-2.5 cursor-pointer"
+                          onClick={() => navigate(`/empresas/${empresa.id}`)}
+                        >
                           <Eye size={16} className="text-slate-500" />
                           Visualizar Detalhes
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-lg gap-2 py-2.5 cursor-pointer">
+                        <DropdownMenuItem 
+                          className="rounded-lg gap-2 py-2.5 cursor-pointer"
+                          onClick={() => navigate(`/empresas/${empresa.id}/editar`)}
+                        >
                           <Edit2 size={16} className="text-slate-500" />
                           Editar Registro
                         </DropdownMenuItem>
