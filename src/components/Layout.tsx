@@ -1,35 +1,30 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { apiRequest } from "@/lib/api-client";
-import type { SafeUser } from "@/lib/auth";
-import { showError } from "@/utils/toast";
+import { AppSidebar } from "@/components/layout/AppSidebar";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { authService } from "@/lib/services/authService";
+import { showSuccess, showError } from "@/utils/toast";
 
 type LayoutProps = {
   children: React.ReactNode;
-  user?: Pick<SafeUser, "id" | "nome" | "email" | "role">;
+  user?: {
+    id: string;
+    nome: string;
+    email: string;
+    role: string;
+  };
 };
 
 export default function Layout({ children, user }: LayoutProps) {
   const router = useRouter();
-  const initials =
-    user?.nome
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "US";
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await apiRequest<{ ok: boolean }>("/api/auth/logout", {
-        method: "POST",
-      });
+      await authService.logout();
+      showSuccess("Sessão encerrada com sucesso.");
       router.replace("/login");
       router.refresh();
     } catch (error) {
@@ -38,43 +33,30 @@ export default function Layout({ children, user }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Building2 size={22} />
-            </div>
-            <Link href="/dashboard" className="text-lg font-bold tracking-tight text-slate-900">
-              Registros.io
-            </Link>
-          </div>
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+      {/* Sidebar Navigation */}
+      <AppSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        userRole={user?.role}
+      />
 
-          {user && (
-            <div className="flex items-center gap-3">
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-semibold text-slate-900">{user.nome}</p>
-                <p className="text-xs text-slate-500">
-                  {user.role === "ADMIN" ? "Administrador" : "Usuario"}
-                </p>
-              </div>
-              <Avatar className="h-10 w-10">
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <Button
-                type="button"
-                variant="ghost"
-                className="gap-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                onClick={handleLogout}
-              >
-                <LogOut size={18} />
-                Sair
-              </Button>
-            </div>
-          )}
-        </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-6 py-10">{children}</main>
+      {/* Main Panel */}
+      <div className="flex flex-1 flex-col overflow-hidden transition-all duration-300">
+        {/* Header Panel */}
+        <AppHeader
+          user={user}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          onLogout={handleLogout}
+        />
+
+        {/* Scrollable Main Area */}
+        <main className="flex-1 overflow-y-auto px-6 py-8">
+          <div className="mx-auto max-w-7xl">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

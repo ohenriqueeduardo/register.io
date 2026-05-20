@@ -1,13 +1,9 @@
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
+import { failure, handleApiError, success, validationFailure } from "@/lib/api-response";
 import { getPrisma } from "@/lib/prisma";
-import {
-  failure,
-  handleApiError,
-  success,
-  validationFailure,
-} from "@/lib/api-response";
 import { registerSchema } from "@/lib/validators/auth";
-import { toSafeUser } from "@/lib/auth";
+import { isPublicRegistrationEnabled, toSafeUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -20,13 +16,20 @@ export async function POST(request: Request) {
       return validationFailure(parsed.error);
     }
 
+    if (!isPublicRegistrationEnabled()) {
+      return failure("Cadastro publico desativado.", 403);
+    }
+
     const prisma = getPrisma();
+    const existingUsersCount = await prisma.user.count();
+
     const existingUser = await prisma.user.findUnique({
       where: { email: parsed.data.email },
+      select: { id: true },
     });
 
     if (existingUser) {
-      return failure("E-mail ja cadastrado.", 409);
+      return failure("Ja existe um usuario com este e-mail.", 409);
     }
 
     const passwordHash = await bcrypt.hash(parsed.data.password, 12);
@@ -35,19 +38,23 @@ export async function POST(request: Request) {
         nome: parsed.data.nome,
         email: parsed.data.email,
         passwordHash,
-      },
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
+        role: existingUsersCount === 0 ? "ADMIN" : "USER",
       },
     });
 
     return success(toSafeUser(user), 201);
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return failure("JSON invalido.", 400);
+    }
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return failure("Ja existe um usuario com este e-mail.", 409);
+    }
+
     return handleApiError(error);
   }
 }

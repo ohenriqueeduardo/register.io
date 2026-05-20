@@ -47,7 +47,6 @@ model Empresa {
   categoria                     Categoria  @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
   especialidades                String[]   @default([])
   catalogoUrl                   String?
-  catalogoPath                  String?
   catalogoNome                  String?
   catalogoMimeType              String?
   catalogoTamanho               Int?

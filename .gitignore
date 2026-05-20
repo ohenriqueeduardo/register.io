@@ -12,6 +12,11 @@ dist
 dist-ssr
 .next
 out
+*.tsbuildinfo
+.vercel
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files

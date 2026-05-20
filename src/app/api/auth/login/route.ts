@@ -1,16 +1,11 @@
 import bcrypt from "bcryptjs";
-import { getPrisma } from "@/lib/prisma";
-import {
-  failure,
-  handleApiError,
-  success,
-  validationFailure,
-} from "@/lib/api-response";
 import {
   getSessionCookieOptions,
   signAuthToken,
   toSafeUser,
 } from "@/lib/auth";
+import { failure, handleApiError, success, validationFailure } from "@/lib/api-response";
+import { getPrisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators/auth";
 
 export const runtime = "nodejs";
@@ -52,6 +47,10 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return failure("JSON invalido.", 400);
+    }
+
     return handleApiError(error);
   }
 }

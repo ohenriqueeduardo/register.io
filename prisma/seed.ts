@@ -4,17 +4,26 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("Admin@123456", 12);
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@sistema.com";
+  const adminName = process.env.ADMIN_NAME ?? "Administrador";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@123456";
+
+  if (process.env.NODE_ENV === "production" && adminPassword === "Admin@123456") {
+    throw new Error("Defina ADMIN_PASSWORD antes de rodar o seed em producao.");
+  }
+
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
 
   await prisma.user.upsert({
-    where: { email: "admin@sistema.com" },
+    where: { email: adminEmail },
     update: {
-      nome: "Administrador",
+      nome: adminName,
+      passwordHash,
       role: UserRole.ADMIN,
     },
     create: {
-      nome: "Administrador",
-      email: "admin@sistema.com",
+      nome: adminName,
+      email: adminEmail,
       passwordHash,
       role: UserRole.ADMIN,
     },

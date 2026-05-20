@@ -31,10 +31,6 @@ const catalogMetadataSchema = {
     emptyToUndefined,
     z.string().url("URL do catalogo invalida.").nullable().optional(),
   ),
-  catalogoPath: z.preprocess(
-    emptyToUndefined,
-    z.string().trim().nullable().optional(),
-  ),
   catalogoNome: z.preprocess(
     emptyToUndefined,
     z.string().trim().nullable().optional(),
@@ -60,6 +56,35 @@ const especialidadesServerSchema = z
     const items = Array.isArray(value) ? value : value.split(",");
     return items.map((item) => item.trim()).filter(Boolean);
   });
+
+const optionalTrimmedString = z.preprocess(
+  emptyToUndefined,
+  z.string().trim().optional(),
+);
+
+const apoioFilterSchema = z.preprocess((value) => {
+  if (value === undefined || value === null || value === "" || value === "all") {
+    return undefined;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.toLowerCase();
+
+    if (["true", "1", "sim", "yes"].includes(normalized)) {
+      return true;
+    }
+
+    if (["false", "0", "nao", "não", "no"].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return value;
+}, z.boolean().optional());
 
 export const empresaFormSchema = z.object({
   nomeEmpresa: z.string().trim().min(2, "Nome da empresa obrigatorio."),
@@ -100,4 +125,32 @@ export const empresaCreateSchema = z.object({
 
 export const empresaUpdateSchema = empresaCreateSchema.partial();
 
+export const empresaListQuerySchema = z
+  .object({
+    q: optionalTrimmedString,
+    search: optionalTrimmedString,
+    categoriaId: optionalTrimmedString,
+    trabalhaComApoioCotacoes: apoioFilterSchema,
+    especialidade: optionalTrimmedString,
+    page: z.coerce.number().int().min(1).catch(1),
+    limit: z.coerce.number().int().min(1).max(100).catch(10),
+    sortBy: z
+      .enum([
+        "nomeEmpresa",
+        "cnpj",
+        "nomeRepresentante",
+        "email1",
+        "categoria",
+        "createdAt",
+        "updatedAt",
+      ])
+      .catch("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).catch("desc"),
+  })
+  .transform((data) => ({
+    ...data,
+    search: data.search ?? data.q,
+  }));
+
 export type EmpresaFormValues = z.infer<typeof empresaFormSchema>;
+export type EmpresaListQuery = z.infer<typeof empresaListQuerySchema>;

@@ -28,6 +28,13 @@ function getJwtSecret() {
   return secret;
 }
 
+export function isPublicRegistrationEnabled() {
+  return (
+    process.env.ALLOW_PUBLIC_REGISTRATION === "true" ||
+    process.env.NODE_ENV !== "production"
+  );
+}
+
 export function signAuthToken(user: Pick<User, "id" | "email" | "role">) {
   return jwt.sign(
     {
@@ -71,14 +78,21 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const prisma = getPrisma();
   const user = await prisma.user.findUnique({
     where: { id: payload.sub },
+    select: {
+      id: true,
+      nome: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   if (!user) {
     return null;
   }
 
-  const { passwordHash: _passwordHash, ...safeUser } = user;
-  return safeUser;
+  return user;
 }
 
 export async function requireAuth() {

@@ -39,7 +39,17 @@ export async function apiRequest<T>(
       ...init?.headers,
     },
   });
-  const payload = (await response.json()) as ApiResponse<T>;
+  const responseText = await response.text();
+  let payload: ApiResponse<T>;
+
+  try {
+    payload = JSON.parse(responseText) as ApiResponse<T>;
+  } catch {
+    throw new ApiError(
+      response.ok ? "Resposta invalida do servidor." : "Erro ao processar a requisicao.",
+      response.status,
+    );
+  }
 
   if (!payload.success) {
     throw new ApiError(payload.message, response.status, payload.errors);

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Register from "@/views/Register";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPublicRegistrationEnabled } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +9,10 @@ export default async function CadastroPage() {
 
   if (user) {
     redirect("/dashboard");
+  }
+
+  if (!isPublicRegistrationEnabled()) {
+    redirect("/login");
   }
 
   return <Register />;

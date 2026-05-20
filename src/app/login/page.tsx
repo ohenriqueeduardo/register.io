@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Login from "@/views/Login";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPublicRegistrationEnabled } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,8 @@ export default async function LoginPage() {
   }
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
-      <Login />
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-slate-950" />}>
+      <Login allowRegistration={isPublicRegistrationEnabled()} />
     </Suspense>
   );
 }

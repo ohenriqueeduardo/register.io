@@ -1,70 +1,79 @@
 # Registros.io
 
-Base backend preparada para evoluir o projeto para fullstack com Next.js App Router, Prisma, PostgreSQL e autenticacao segura.
+Sistema fullstack para cadastro, classificacao e gestao de empresas parceiras, com autenticacao segura, banco PostgreSQL via Prisma e upload real de catalogos em Supabase Storage.
 
-Escopo atual: base Prisma/validacoes e autenticacao.
+## Stack
 
-## Implementado
+- Next.js App Router
+- TypeScript
+- Prisma ORM
+- PostgreSQL
+- Zod
+- bcryptjs
+- JWT em cookie httpOnly
+- Supabase Storage
+- shadcn/ui + Tailwind CSS
 
-- Dependencias de backend e validacao instaladas.
-- Scripts de Prisma adicionados ao `package.json`.
-- `prisma/schema.prisma` com PostgreSQL.
-- Models `User`, `Empresa`, `Categoria` e `AuditLog`.
-- Enum `UserRole`.
-- Migration inicial.
-- Seed com admin inicial e categorias base.
-- `.env.example`.
-- `src/lib/prisma.ts` com singleton seguro para hot reload.
-- Validadores Zod em `src/lib/validators`.
-- Helper de CNPJ com limpeza, formatacao e validacao real.
-- Autenticacao com JWT em cookie httpOnly.
-- Endpoints `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout` e `GET /api/auth/me`.
-- Helpers `getCurrentUser`, `requireAuth` e `requireAdmin`.
+## Funcionalidades
+
+- Autenticacao: `register`, `login`, `logout`, `me`.
 - Rotas privadas protegidas por layout server-side.
-- Telas `/login` e `/cadastro` integradas aos endpoints reais.
+- CRUD de empresas com busca, filtros, paginacao e ordenacao.
+- CNPJ validado e unico.
+- CRUD de categorias com protecao para administradores nas mutacoes.
+- Listagem real de usuarios para administradores.
+- Dashboard com estatisticas reais do banco.
+- Upload, visualizacao, download, substituicao e remocao de catalogos.
+- Banco salva apenas metadados do catalogo: URL, nome, MIME type e tamanho.
 
-CRUD de empresas/categorias e upload real ainda nao foram implementados neste escopo.
+## Variaveis De Ambiente
 
-## Variaveis
-
-Crie `.env` a partir de `.env.example`.
+Crie `.env` a partir de `.env.example` em desenvolvimento. O Prisma CLI le `.env` por padrao; `.env.local` e carregado pelo Next.js, mas nao deve ser usado como unico arquivo para comandos `prisma`.
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
 JWT_SECRET="troque-por-um-segredo-forte-com-pelo-menos-32-caracteres"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-STORAGE_PROVIDER="supabase"
-SUPABASE_URL=""
-SUPABASE_SERVICE_ROLE_KEY=""
+SUPABASE_URL="https://SEU-PROJETO.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
 SUPABASE_BUCKET="catalogos"
+ALLOW_PUBLIC_REGISTRATION="false"
+ADMIN_EMAIL="admin@sistema.com"
+ADMIN_NAME="Administrador"
+ADMIN_PASSWORD="troque-por-uma-senha-forte"
 ```
 
-## Prisma
+O bucket do Supabase deve existir. Para abrir arquivos diretamente pela URL retornada, use bucket publico.
+Em producao, mantenha `ALLOW_PUBLIC_REGISTRATION="false"` salvo se o cadastro publico for intencional.
 
-Gerar client:
+## Instalar
+
+```bash
+pnpm install
+cp .env.example .env
+```
+
+No Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Depois edite `.env` com os valores reais.
+
+## Banco E Prisma
 
 ```bash
 pnpm prisma:generate
-```
-
-Criar/aplicar migration em desenvolvimento:
-
-```bash
 pnpm prisma:migrate
-```
-
-Rodar seed:
-
-```bash
 pnpm prisma:seed
 ```
 
-Admin inicial do seed:
+Admin inicial criado pelo seed:
 
-- Email: `admin@sistema.com`
-- Senha: `Admin@123456`
+- Email: valor de `ADMIN_EMAIL` ou `admin@sistema.com`
+- Senha: valor de `ADMIN_PASSWORD` ou `Admin@123456` em desenvolvimento
 
-Altere essa senha em producao.
+Defina `ADMIN_PASSWORD` antes de rodar o seed em producao.
 
 ## Desenvolvimento
 
@@ -72,9 +81,56 @@ Altere essa senha em producao.
 pnpm dev
 ```
 
-## Validacao
+## Validacao Local
 
 ```bash
 pnpm lint
+pnpm typecheck
+pnpm build
+```
+
+## Deploy Na Vercel
+
+1. Configure as variaveis `DATABASE_URL`, `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET`, `ALLOW_PUBLIC_REGISTRATION`, `ADMIN_EMAIL`, `ADMIN_NAME` e `ADMIN_PASSWORD`.
+2. Garanta que o banco PostgreSQL esteja acessivel pela Vercel.
+3. Aplique migrations no banco de producao antes do rollout:
+
+```bash
+pnpm prisma:migrate:deploy
+```
+
+4. Rode o seed apenas se quiser criar o admin inicial no ambiente:
+
+```bash
+pnpm prisma:seed
+```
+
+5. O build da Vercel usa:
+
+```bash
+pnpm build
+```
+
+O script de build ja executa `prisma generate && next build`.
+
+## Comandos Finais
+
+```bash
+pnpm install
+cp .env.example .env
+pnpm prisma:generate
+pnpm prisma:migrate
+pnpm prisma:seed
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm dev
+```
+
+Para producao:
+
+```bash
+pnpm prisma:migrate:deploy
+pnpm prisma:seed
 pnpm build
 ```
