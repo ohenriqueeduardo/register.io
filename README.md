@@ -31,7 +31,7 @@ Sistema fullstack para cadastro, classificacao e gestao de empresas parceiras, c
 Crie `.env` a partir de `.env.example` em desenvolvimento. O Prisma CLI le `.env` por padrao; `.env.local` e carregado pelo Next.js, mas nao deve ser usado como unico arquivo para comandos `prisma`.
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:6543/DATABASE?pgbouncer=true&connection_limit=1&pool_timeout=20"
 JWT_SECRET="troque-por-um-segredo-forte-com-pelo-menos-32-caracteres"
 SUPABASE_URL="https://SEU-PROJETO.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
@@ -41,6 +41,8 @@ ADMIN_EMAIL="admin@sistema.com"
 ADMIN_NAME="Administrador"
 ADMIN_PASSWORD="troque-por-uma-senha-forte"
 ```
+
+Em deploy serverless com Vercel + Supabase, use a connection string do Transaction Pooler do Supabase (porta `6543`) em `DATABASE_URL`. Evite a porta `5432` do Session Pooler para runtime da aplicação, pois ela pode estourar o limite de sessões.
 
 O bucket do Supabase deve existir. Para abrir arquivos diretamente pela URL retornada, use bucket publico.
 Em producao, mantenha `ALLOW_PUBLIC_REGISTRATION="false"` salvo se o cadastro publico for intencional.
