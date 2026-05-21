@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Save, Building, User, Mail, FolderOpen, Tag, FileText } from "lucide-react";
+import { ChevronLeft, Save, Building, User, Mail, FolderOpen, Tag, FileText, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { empresaFormSchema, EmpresaFormValues } from "@/lib/validators/empresa";
 import { formatCNPJ, formatPhone, cleanCNPJ, cleanPhone } from "@/utils/masks";
+import { isValidCNPJ } from "@/lib/validators/cnpj";
 import { empresaService } from "@/lib/services/empresaService";
 import {
   catalogoUploadService,
@@ -71,6 +72,7 @@ export default function NovaEmpresaPage() {
     handleSubmit,
     control,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<EmpresaFormValues>({
     resolver: zodResolver(empresaFormSchema),
@@ -87,6 +89,10 @@ export default function NovaEmpresaPage() {
       especialidades: "",
     },
   });
+
+  const cnpjValue = watch("cnpj") ?? "";
+  const cnpjDigits = cnpjValue.replace(/\D/g, "");
+  const showCnpjAlert = cnpjDigits.length === 14 && !isValidCNPJ(cnpjDigits);
 
   const onSubmit = async (values: EmpresaFormValues) => {
     setIsSaving(true);
@@ -189,6 +195,15 @@ export default function NovaEmpresaPage() {
               />
               {errors.cnpj && (
                 <p className="text-xs text-rose-500">{errors.cnpj.message}</p>
+              )}
+              {showCnpjAlert && (
+                <div className="flex items-start gap-2 mt-1 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-gradient-to-r from-amber-50 to-yellow-50/60 dark:from-amber-950/25 dark:to-yellow-950/10 px-3 py-2.5 animate-pulse">
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 leading-relaxed">
+                    <span className="font-extrabold">CNPJ sob análise:</span> os dígitos verificadores não conferem.
+                    O cadastro será salvo normalmente, mas ficará marcado para revisão administrativa.
+                  </p>
+                </div>
               )}
             </div>
           </div>

@@ -41,7 +41,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin();
+    await requireAuth();
 
     const body = await request.json();
     const parsed = categoriaSchema.safeParse(body);
@@ -63,14 +63,14 @@ export async function POST(request: Request) {
     return success(serializeCategoria(categoria), 201);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return failure("JSON invalido.", 400);
+      return failure("JSON inválido.", 400);
     }
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return failure("Ja existe uma categoria com este nome.", 409);
+      return failure("Já existe uma categoria com este nome.", 409);
     }
 
     return handleApiError(error);

@@ -14,6 +14,7 @@ import {
   FileText,
   Download,
   Eye,
+  Link2,
   CheckCircle,
   XCircle,
   Calendar,
@@ -26,6 +27,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { empresaService } from "@/lib/services/empresaService";
 import { Empresa, Categoria } from "@/types";
 import { formatCNPJ, formatPhone } from "@/utils/masks";
+import { isValidCNPJ } from "@/lib/validators/cnpj";
 import { showSuccess, showError } from "@/utils/toast";
 import Link from "next/link";
 
@@ -90,7 +92,7 @@ export default function EmpresaDetalhesPage({ params }: PageProps) {
     e.preventDefault();
     if (!empresa || !empresa.catalogoNome) return;
     if (!empresa.catalogoUrl || empresa.catalogoUrl === "#") {
-      showError("Catalogo sem URL valida para download.");
+      showError("Catálogo sem URL válida para download.");
       return;
     }
 
@@ -108,7 +110,7 @@ export default function EmpresaDetalhesPage({ params }: PageProps) {
     e.preventDefault();
     if (!empresa || !empresa.catalogoNome) return;
     if (!empresa.catalogoUrl || empresa.catalogoUrl === "#") {
-      showError("Catalogo sem URL valida para visualizacao.");
+      showError("Catálogo sem URL válida para visualização.");
       return;
     }
 
@@ -121,6 +123,19 @@ export default function EmpresaDetalhesPage({ params }: PageProps) {
     const sizes = ["Bytes", "KB", "MB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  const isExternalCatalogLink =
+    Boolean(empresa?.catalogoUrl?.startsWith("http")) && !empresa?.catalogoTamanho;
+
+  const getCatalogSourceLabel = (url?: string) => {
+    if (!url) return "Link externo";
+
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+      return "Link externo";
+    }
   };
 
   if (isLoading || !empresa) {
@@ -165,6 +180,24 @@ export default function EmpresaDetalhesPage({ params }: PageProps) {
           </Button>
         </div>
       </div>
+
+      {/* Alert banner if CNPJ is mathematically invalid */}
+      {!isValidCNPJ(empresa.cnpj) && (
+        <Card className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-gradient-to-r from-amber-50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/10 p-5 shadow-md flex items-start gap-3.5 animate-pulse">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400 border border-amber-200/40">
+            <span className="text-xl">⚠️</span>
+          </div>
+          <div>
+            <h3 className="text-sm font-extrabold text-amber-800 dark:text-amber-300">
+              Alerta de Integridade de Documento
+            </h3>
+            <p className="text-xs font-semibold text-amber-700/90 dark:text-amber-400/90 mt-1 leading-relaxed">
+              O CNPJ cadastrado (<strong className="font-extrabold">{formatCNPJ(empresa.cnpj)}</strong>) não passou nos critérios de validação matemática (dígitos verificadores incorretos).
+              O cadastro foi mantido ativo por conveniência, mas é fortemente recomendado revisar o documento com o parceiro comercial para evitar inconsistências em emissões futuras.
+            </p>
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Left main block: Info Cards */}
@@ -326,16 +359,35 @@ export default function EmpresaDetalhesPage({ params }: PageProps) {
             {empresa.catalogoNome ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 border border-red-100 dark:border-red-900/20">
-                    <FileText className="h-5 w-5" />
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
+                    isExternalCatalogLink
+                      ? "bg-sky-50 text-sky-600 dark:bg-sky-950/20 dark:text-sky-400 border-sky-100 dark:border-sky-900/20"
+                      : "bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 border-red-100 dark:border-red-900/20"
+                  }`}>
+                    {isExternalCatalogLink ? (
+                      <Link2 className="h-5 w-5" />
+                    ) : (
+                      <FileText className="h-5 w-5" />
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-900 dark:text-slate-50 truncate" title={empresa.catalogoNome}>
                       {empresa.catalogoNome}
                     </p>
-                    <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5">
-                      {formatSize(empresa.catalogoTamanho)}
-                    </p>
+                    {isExternalCatalogLink ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="rounded-lg border border-sky-100 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:border-sky-900/30 dark:bg-sky-950/20 dark:text-sky-300">
+                          Link importado da planilha
+                        </Badge>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {getCatalogSourceLabel(empresa.catalogoUrl)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5">
+                        {formatSize(empresa.catalogoTamanho)}
+                      </p>
+                    )}
                   </div>
                 </div>
 

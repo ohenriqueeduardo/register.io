@@ -63,6 +63,37 @@ const extractFirstPhone = (value: string) => {
   return match ? `${match[1]}${match[2]}${match[3]}` : "";
 };
 
+const stripImportedUrlFromText = (value: string, url: string) =>
+  value
+    .replace(url, "")
+    .replace(/^[\s\-:|]+|[\s\-:|]+$/g, "")
+    .trim();
+
+const getCatalogDisplayNameFromUrl = (url: string) => {
+  try {
+    const parsedUrl = new URL(url);
+    const lastSegment = decodeURIComponent(
+      parsedUrl.pathname.split("/").filter(Boolean).pop() ?? "",
+    )
+      .replace(/\.[a-z0-9]+$/i, "")
+      .replace(/[-_]+/g, " ")
+      .trim();
+
+    if (
+      lastSegment &&
+      !["view", "file", "open", "download", "preview"].includes(
+        normalizeImportKey(lastSegment),
+      )
+    ) {
+      return lastSegment;
+    }
+
+    return `Catálogo externo - ${parsedUrl.hostname.replace(/^www\./, "")}`;
+  } catch {
+    return "Catálogo externo";
+  }
+};
+
 const getImportedValue = (row: ImportedRow, keys: string[]) => {
   const normalizedKeys = keys.map(normalizeImportKey);
   const match = Object.keys(row).find((rowKey) =>
@@ -70,6 +101,40 @@ const getImportedValue = (row: ImportedRow, keys: string[]) => {
   );
 
   return match ? String(row[match] ?? "").trim() : "";
+};
+
+const resolveImportedCatalogName = (row: ImportedRow, catalogoRaw: string, catalogoUrl: string) => {
+  if (!catalogoUrl) {
+    return null;
+  }
+
+  const inlineLabel = stripImportedUrlFromText(catalogoRaw, catalogoUrl);
+  if (inlineLabel) {
+    return inlineLabel;
+  }
+
+  const metadataLabel = getImportedValue(row, [
+    "assunto",
+    "assuntodolink",
+    "assuntodocatalogo",
+    "tema",
+    "titulo",
+    "titulodolink",
+    "titulodocatalogo",
+    "descricao",
+    "descricaodolink",
+    "descricaodocatalogo",
+    "nomecatalogo",
+    "catalogonome",
+    "nomedolink",
+    "sobreoque",
+  ]);
+
+  if (metadataLabel) {
+    return metadataLabel;
+  }
+
+  return getCatalogDisplayNameFromUrl(catalogoUrl);
 };
 
 const findCategoria = (catList: Categoria[], value: string) => {
@@ -245,9 +310,14 @@ export default function EmpresasPage() {
     const especialidades = Array.from(
       new Set([...categoryNames.slice(1), ...splitImportList(espRaw)]),
     );
-    const catalogoUrl = extractFirstUrl(
-      getVal(["anexarcatalogodeprodutosfornecidos", "catalogo", "catalogourl", "urlcatalogo"]),
-    );
+    const catalogoRaw = getVal([
+      "anexarcatalogodeprodutosfornecidos",
+      "catalogo",
+      "catalogourl",
+      "urlcatalogo",
+    ]);
+    const catalogoUrl = extractFirstUrl(catalogoRaw);
+    const catalogoNome = resolveImportedCatalogName(row, catalogoRaw, catalogoUrl);
 
     return {
       nomeEmpresa: nomeEmpresa || "Empresa Importada",
@@ -261,7 +331,7 @@ export default function EmpresasPage() {
       categoriaId,
       especialidades,
       catalogoUrl: catalogoUrl || null,
-      catalogoNome: catalogoUrl ? "Catalogo importado" : null,
+      catalogoNome: catalogoNome || null,
     };
   };
 
@@ -275,7 +345,7 @@ export default function EmpresasPage() {
     const isCsv = lowerFileName.endsWith(".csv");
 
     if (!isExcel && !isCsv) {
-      showError("Formato nao suportado. Envie um arquivo .xlsx ou .csv.");
+      showError("Formato não suportado. Envie um arquivo .xlsx ou .csv.");
       e.target.value = "";
       return;
     }
@@ -321,6 +391,7 @@ export default function EmpresasPage() {
         let duplicateCount = 0;
         let newCatsCount = 0;
         let invalidCnpjCount = 0;
+        let invalidCnpjImportedCount = 0;
         let failedCatsCount = 0;
 
         const existingEmpresas: Empresa[] = [];
@@ -351,9 +422,14 @@ export default function EmpresasPage() {
           const categoriaRaw = categoryNames[0] ?? "";
           const importedCnpj = getImportedValue(row, ["cnpjdaempresa", "cnpj", "documento"]).replace(/\D/g, "");
 
-          if (!importedCnpj || !isValidCNPJ(importedCnpj)) {
+          if (!importedCnpj || importedCnpj.length !== 14) {
             invalidCnpjCount++;
             continue;
+          }
+
+          const isMathValid = isValidCNPJ(importedCnpj);
+          if (!isMathValid) {
+            invalidCnpjImportedCount++;
           }
 
           if (existingCnpjs.has(importedCnpj) || batchCnpjs.has(importedCnpj)) {
@@ -405,6 +481,8 @@ export default function EmpresasPage() {
         if (importedCount > 0) {
           showSuccess(
             `${importedCount} empresa(s) importada(s) com sucesso!${
+              invalidCnpjImportedCount > 0 ? ` (${invalidCnpjImportedCount} com CNPJ sob análise de integridade)` : ""
+            }${
               newCatsCount > 0 ? ` (${newCatsCount} nova(s) categoria(s) criada(s))` : ""
             }`
           );
@@ -415,11 +493,11 @@ export default function EmpresasPage() {
         }
 
         if (invalidCnpjCount > 0) {
-          showWarning(`${invalidCnpjCount} linha(s) ignorada(s) por CNPJ invalido.`);
+          showWarning(`${invalidCnpjCount} linha(s) ignorada(s) por CNPJ inválido.`);
         }
 
         if (failedCatsCount > 0) {
-          showWarning(`${failedCatsCount} linha(s) ignorada(s) por categoria sem permissao de criacao.`);
+          showWarning(`${failedCatsCount} linha(s) ignorada(s) por categoria sem permissão de criação.`);
         }
 
         if (
@@ -471,14 +549,14 @@ export default function EmpresasPage() {
       const categoryName =
         emp.categoria?.nome ||
         categorias.find(c => c.id === emp.categoriaId)?.nome ||
-        "Nao definido";
+        "Não definido";
       return [
         `"${emp.nomeEmpresa.replace(/"/g, '""')}"`,
         `"${emp.cnpj}"`,
         `"${emp.nomeRepresentante.replace(/"/g, '""')}"`,
         `"${emp.telefoneRepresentante}"`,
         `"${emp.email1}"`,
-        emp.trabalhaComApoioCotacoes ? "Sim" : "Nao",
+        emp.trabalhaComApoioCotacoes ? "Sim" : "Não",
         `"${categoryName}"`,
         `"${emp.especialidades.join(" | ")}"`
       ];
@@ -675,13 +753,13 @@ export default function EmpresasPage() {
               <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
                 <thead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/10">
                   <tr>
-                    <th scope="col" className="py-4 px-6 font-bold">Empresa</th>
-                    <th scope="col" className="py-4 px-6 font-bold">CNPJ</th>
-                    <th scope="col" className="py-4 px-6 font-bold">Representante</th>
-                    <th scope="col" className="py-4 px-6 font-bold">E-mail Principal</th>
-                    <th scope="col" className="py-4 px-6 font-bold">Categoria</th>
-                    <th scope="col" className="py-4 px-6 font-bold">Apoio</th>
-                    <th scope="col" className="py-4 px-6 font-bold text-center">Ações</th>
+                    <th scope="col" className="py-4 px-6 font-bold w-[22%] min-w-[150px]">Empresa</th>
+                    <th scope="col" className="py-4 px-6 font-bold w-[15%] min-w-[140px]">CNPJ</th>
+                    <th scope="col" className="py-4 px-6 font-bold w-[15%] min-w-[120px]">Representante</th>
+                    <th scope="col" className="py-4 px-6 font-bold w-[20%] min-w-[160px]">E-mail Principal</th>
+                    <th scope="col" className="py-4 px-6 font-bold w-[13%] min-w-[110px]">Categoria</th>
+                    <th scope="col" className="py-4 px-6 font-bold w-[7%] min-w-[70px]">Apoio</th>
+                    <th scope="col" className="py-4 px-6 font-bold w-[8%] min-w-[100px] text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -693,13 +771,27 @@ export default function EmpresasPage() {
 
                     return (
                       <tr key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
-                        <td className="py-4 px-6 font-semibold text-slate-900 dark:text-slate-100">
+                        <td className="py-4 px-6 font-semibold text-slate-900 dark:text-slate-100 max-w-[200px] break-words">
                           {emp.nomeEmpresa}
                         </td>
-                        <td className="py-4 px-6 font-medium">{formatCNPJ(emp.cnpj)}</td>
-                        <td className="py-4 px-6">{emp.nomeRepresentante}</td>
-                        <td className="py-4 px-6">{emp.email1}</td>
-                        <td className="py-4 px-6">
+                        <td className="py-4 px-6 font-medium whitespace-nowrap">
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{formatCNPJ(emp.cnpj)}</span>
+                            {!isValidCNPJ(emp.cnpj) && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30 px-1.5 py-0.5 rounded-md w-max shadow-sm animate-pulse">
+                                <span>⚠️</span>
+                                <span>Sob análise administrativa</span>
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 max-w-[150px] truncate" title={emp.nomeRepresentante}>
+                          {emp.nomeRepresentante}
+                        </td>
+                        <td className="py-4 px-6 max-w-[180px] truncate" title={emp.email1}>
+                          {emp.email1}
+                        </td>
+                        <td className="py-4 px-6 max-w-[130px] truncate" title={categoryName}>
                           <Badge variant="secondary" className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-2 py-0.5 text-xs text-slate-600 dark:text-slate-400">
                             {categoryName}
                           </Badge>

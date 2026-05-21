@@ -11,11 +11,11 @@ export const ALLOWED_CATALOG_MIME_TYPES = [
 
 export function validateCatalogFile(file: File) {
   if (!ALLOWED_CATALOG_MIME_TYPES.includes(file.type as never)) {
-    return "Tipo de arquivo nao permitido.";
+    return "Tipo de arquivo não permitido.";
   }
 
   if (file.size > MAX_CATALOG_SIZE) {
-    return "O catalogo deve ter no maximo 10MB.";
+    return "O catálogo deve ter no máximo 10MB.";
   }
 
   return null;

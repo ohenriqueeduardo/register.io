@@ -31,7 +31,7 @@ export function validationFailure(error: ZodError) {
     errors[path] = [...(errors[path] ?? []), issue.message];
   }
 
-  return failure("Dados invalidos.", 400, errors);
+  return failure("Dados inválidos.", 400, errors);
 }
 
 export function handleApiError(error: unknown) {

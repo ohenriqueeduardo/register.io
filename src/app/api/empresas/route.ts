@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     });
 
     if (existingEmpresa) {
-      return failure("Ja existe uma empresa cadastrada com este CNPJ.", 409);
+      return failure("Já existe uma empresa cadastrada com este CNPJ.", 409);
     }
 
     const categoria = await prisma.categoria.findUnique({
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     });
 
     if (!categoria) {
-      return failure("Categoria nao encontrada.", 404);
+      return failure("Categoria não encontrada.", 404);
     }
 
     const empresa = await prisma.$transaction(async (tx) => {
@@ -177,14 +177,14 @@ export async function POST(request: Request) {
     return success(empresa, 201);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return failure("JSON invalido.", 400);
+      return failure("JSON inválido.", 400);
     }
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return failure("Ja existe uma empresa cadastrada com este CNPJ.", 409);
+      return failure("Já existe uma empresa cadastrada com este CNPJ.", 409);
     }
 
     return handleApiError(error);

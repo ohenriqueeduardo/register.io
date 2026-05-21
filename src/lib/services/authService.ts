@@ -29,4 +29,35 @@ export const authService = {
       return null;
     }
   },
+
+  async updateProfile(nome: string): Promise<User> {
+    return apiRequest<User>("/api/auth/account", {
+      method: "PATCH",
+      body: JSON.stringify({ action: "profile", nome }),
+    });
+  },
+
+  async updateEmail(email: string, currentPassword: string): Promise<User> {
+    return apiRequest<User>("/api/auth/account", {
+      method: "PATCH",
+      body: JSON.stringify({ action: "email", email, currentPassword }),
+    });
+  },
+
+  async updatePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<User> {
+    return apiRequest<User>("/api/auth/account", {
+      method: "PATCH",
+      body: JSON.stringify({ action: "password", currentPassword, newPassword }),
+    });
+  },
+
+  async deleteAccount(currentPassword: string): Promise<void> {
+    await apiRequest("/api/auth/account", {
+      method: "DELETE",
+      body: JSON.stringify({ currentPassword }),
+    });
+  },
 };

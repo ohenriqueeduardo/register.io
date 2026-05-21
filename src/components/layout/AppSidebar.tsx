@@ -4,15 +4,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Building2,
   LayoutDashboard,
   Building,
   PlusCircle,
   FolderOpen,
   Users,
-  Settings,
   X,
 } from "lucide-react";
+import { SystemLogo } from "@/components/brand/SystemLogo";
 import { cn } from "@/lib/utils";
 
 interface AppSidebarProps {
@@ -35,7 +34,6 @@ export function AppSidebar({
     { label: "Nova Empresa", href: "/empresas/nova", icon: PlusCircle },
     { label: "Categorias", href: "/categorias", icon: FolderOpen },
     { label: "Usuários", href: "/usuarios", icon: Users, roleRestriction: "ADMIN" },
-    { label: "Configurações", href: "/configuracoes", icon: Settings },
   ];
 
   // Filtra itens baseando-se no papel do usuário
@@ -68,9 +66,7 @@ export function AppSidebar({
             )}
           >
             <Link href="/dashboard" className="flex items-center gap-3" onClick={onClose}>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500 text-white ring-1 ring-white/10 hover:scale-105 transition-transform duration-200 dark:bg-sky-400 dark:text-slate-950">
-                <Building2 size={22} className="text-current" />
-              </div>
+              <SystemLogo className="h-10 w-10 transition-transform duration-200 hover:scale-105" />
               {!isCollapsedState && (
                 <span className="text-lg font-bold tracking-tight text-white animate-fade-in">
                   Registros<span className="text-sky-400 dark:text-sky-300 font-semibold">.io</span>

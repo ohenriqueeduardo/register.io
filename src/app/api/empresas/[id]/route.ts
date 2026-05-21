@@ -82,7 +82,7 @@ export async function GET(_request: Request, context: RouteContext) {
     });
 
     if (!empresa) {
-      return failure("Empresa nao encontrada.", 404);
+      return failure("Empresa não encontrada.", 404);
     }
 
     return success(empresa);
@@ -109,7 +109,7 @@ export async function PUT(request: Request, context: RouteContext) {
     });
 
     if (!currentEmpresa) {
-      return failure("Empresa nao encontrada.", 404);
+      return failure("Empresa não encontrada.", 404);
     }
 
     if (parsed.data.cnpj) {
@@ -123,7 +123,7 @@ export async function PUT(request: Request, context: RouteContext) {
       });
 
       if (duplicateEmpresa) {
-        return failure("Ja existe outra empresa cadastrada com este CNPJ.", 409);
+        return failure("Já existe outra empresa cadastrada com este CNPJ.", 409);
       }
     }
 
@@ -134,7 +134,7 @@ export async function PUT(request: Request, context: RouteContext) {
       });
 
       if (!categoria) {
-        return failure("Categoria nao encontrada.", 404);
+        return failure("Categoria não encontrada.", 404);
       }
     }
 
@@ -161,14 +161,14 @@ export async function PUT(request: Request, context: RouteContext) {
     return success(empresa);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return failure("JSON invalido.", 400);
+      return failure("JSON inválido.", 400);
     }
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return failure("Ja existe outra empresa cadastrada com este CNPJ.", 409);
+      return failure("Já existe outra empresa cadastrada com este CNPJ.", 409);
     }
 
     return handleApiError(error);
@@ -191,7 +191,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     });
 
     if (!currentEmpresa) {
-      return failure("Empresa nao encontrada.", 404);
+      return failure("Empresa não encontrada.", 404);
     }
 
     if (currentEmpresa.catalogoUrl) {

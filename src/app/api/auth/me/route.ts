@@ -8,7 +8,7 @@ export async function GET() {
     const user = await getCurrentUser();
 
     if (!user) {
-      return failure("Nao autenticado.", 401);
+      return failure("Não autenticado.", 401);
     }
 
     return success(user);

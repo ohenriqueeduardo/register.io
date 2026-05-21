@@ -265,13 +265,6 @@ export default function Dashboard() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--background))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "12px",
-                      }}
-                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (

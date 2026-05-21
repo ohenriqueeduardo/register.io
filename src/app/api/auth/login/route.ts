@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return failure("Credenciais invalidas.", 401);
+      return failure("Credenciais inválidas.", 401);
     }
 
     const passwordMatches = await bcrypt.compare(
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     );
 
     if (!passwordMatches) {
-      return failure("Credenciais invalidas.", 401);
+      return failure("Credenciais inválidas.", 401);
     }
 
     const token = signAuthToken(user);
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return failure("JSON invalido.", 400);
+      return failure("JSON inválido.", 400);
     }
 
     return handleApiError(error);

@@ -39,7 +39,7 @@ export async function GET(_request: Request, context: RouteContext) {
     });
 
     if (!categoria) {
-      return failure("Categoria nao encontrada.", 404);
+      return failure("Categoria não encontrada.", 404);
     }
 
     return success(serializeCategoria(categoria));
@@ -74,21 +74,21 @@ export async function PUT(request: Request, context: RouteContext) {
     return success(serializeCategoria(categoria));
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return failure("JSON invalido.", 400);
+      return failure("JSON inválido.", 400);
     }
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2025"
     ) {
-      return failure("Categoria nao encontrada.", 404);
+      return failure("Categoria não encontrada.", 404);
     }
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return failure("Ja existe uma categoria com este nome.", 409);
+      return failure("Já existe uma categoria com este nome.", 409);
     }
 
     return handleApiError(error);
@@ -107,7 +107,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
     if (empresasCount > 0) {
       return failure(
-        "Esta categoria nao pode ser excluida pois possui empresas associadas.",
+        "Esta categoria não pode ser excluída pois possui empresas associadas.",
         409,
       );
     }
@@ -122,7 +122,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2025"
     ) {
-      return failure("Categoria nao encontrada.", 404);
+      return failure("Categoria não encontrada.", 404);
     }
 
     return handleApiError(error);

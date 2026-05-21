@@ -17,7 +17,7 @@ const deleteCatalogoSchema = z
     url: z.string().trim().url().optional(),
   })
   .refine((data) => data.path || data.url, {
-    message: "Informe o caminho ou URL do catalogo.",
+    message: "Informe o caminho ou URL do catálogo.",
     path: ["url"],
   });
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
-      return failure("Arquivo nao enviado.", 400);
+      return failure("Arquivo não enviado.", 400);
     }
 
     const validationMessage = validateCatalogFile(file);
@@ -61,7 +61,7 @@ export async function DELETE(request: Request) {
       (parsed.data.url ? resolveCatalogoPathFromUrl(parsed.data.url) : null);
 
     if (!path) {
-      return failure("Caminho do catalogo invalido.", 400);
+      return failure("Caminho do catálogo inválido.", 400);
     }
 
     const isOwnPendingUpload = path.startsWith(`${user.id}/`);
@@ -75,7 +75,7 @@ export async function DELETE(request: Request) {
       : false;
 
     if (!isOwnPendingUpload && !isPersistedCatalog) {
-      return failure("Catalogo nao encontrado ou sem permissao para remocao.", 403);
+      return failure("Catálogo não encontrado ou sem permissão para remoção.", 403);
     }
 
     const removed = await deleteCatalogoFromStorage({ path });
@@ -83,7 +83,7 @@ export async function DELETE(request: Request) {
     return success({ ok: true, removed });
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return failure("JSON invalido.", 400);
+      return failure("JSON inválido.", 400);
     }
 
     return handleApiError(error);

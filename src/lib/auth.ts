@@ -99,7 +99,7 @@ export async function requireAuth() {
   const user = await getCurrentUser();
 
   if (!user) {
-    throw new AuthError("Nao autenticado.", 401);
+    throw new AuthError("Não autenticado.", 401);
   }
 
   return user;
@@ -109,7 +109,7 @@ export async function requireAdmin() {
   const user = await requireAuth();
 
   if (user.role !== "ADMIN") {
-    throw new AuthError("Sem permissao.", 403);
+    throw new AuthError("Sem permissão.", 403);
   }
 
   return user;

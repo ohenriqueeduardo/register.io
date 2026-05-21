@@ -6,7 +6,7 @@ export function getSupabaseBucket() {
   const bucket = process.env.SUPABASE_BUCKET;
 
   if (!bucket) {
-    throw new Error("SUPABASE_BUCKET nao configurado.");
+    throw new Error("SUPABASE_BUCKET não configurado.");
   }
 
   return bucket;
@@ -17,7 +17,7 @@ export function getSupabaseAdmin() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceRoleKey) {
-    throw new Error("Supabase Storage nao configurado.");
+    throw new Error("Supabase Storage não configurado.");
   }
 
   if (!supabaseAdmin) {

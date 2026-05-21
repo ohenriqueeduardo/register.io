@@ -1,0 +1,120 @@
+import { cn } from "@/lib/utils";
+
+interface SystemLogoProps {
+  className?: string;
+}
+
+export function SystemLogo({ className }: SystemLogoProps) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      aria-hidden="true"
+      className={cn("shrink-0", className)}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="system-logo-bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#5DD0FF" />
+          <stop offset="1" stopColor="#2FAEEF" />
+        </linearGradient>
+      </defs>
+      <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#system-logo-bg)" />
+      <path
+        d="M22 24.5C22 22.8431 23.3431 21.5 25 21.5H34C35.6569 21.5 37 22.8431 37 24.5V45.5H22V24.5Z"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M37 28.5C37 26.8431 38.3431 25.5 40 25.5H43C44.6569 25.5 46 26.8431 46 28.5V45.5H37V28.5Z"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18 45.5H49"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M26 28.5H28"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M31 28.5H33"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M26 33.5H28"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M31 33.5H33"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M26 38.5H28"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M31 38.5H33"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M40 31.5H42"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M40 36.5H42"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M28.5 45.5V39.5H30.5V45.5"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M22 24.5H37"
+        fill="none"
+        stroke="#093B66"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export default SystemLogo;

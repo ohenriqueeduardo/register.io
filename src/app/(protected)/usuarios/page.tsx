@@ -22,14 +22,14 @@ export default function UsuariosPage() {
         const currentUser = await authService.getCurrentUser();
 
         if (!currentUser || currentUser.role !== "ADMIN") {
-          showError("Acesso negado. Apenas administradores podem gerenciar usuarios.");
+          showError("Acesso negado. Apenas administradores podem gerenciar usuários.");
           router.replace("/dashboard");
           return;
         }
 
         setUsers(await userService.list());
       } catch {
-        showError("Erro ao validar permissoes de acesso.");
+        showError("Erro ao validar permissões de acesso.");
         router.replace("/dashboard");
       } finally {
         setIsLoading(false);
@@ -42,7 +42,7 @@ export default function UsuariosPage() {
   if (isLoading) {
     return (
       <LoadingState
-        message="Validando credenciais e buscando usuarios..."
+        message="Validando credenciais e buscando usuários..."
         variant="table"
       />
     );
@@ -53,10 +53,10 @@ export default function UsuariosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-50">
-            Usuarios
+            Usuários
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Gestao de perfis e permissoes de acesso ao sistema de registros.
+            Gestão de perfis e permissões de acesso ao sistema de registros.
           </p>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function UsuariosPage() {
         <Card className="rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-950 p-4 shadow-sm flex items-center justify-between">
           <div className="space-y-1">
             <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Total de Usuarios
+              Total de Usuários
             </p>
             <p className="text-2xl font-black text-slate-900 dark:text-slate-50">
               {users.length}
@@ -114,7 +114,7 @@ export default function UsuariosPage() {
                 <th scope="col" className="py-4 px-6 font-bold">E-mail</th>
                 <th scope="col" className="py-4 px-6 font-bold">Perfil</th>
                 <th scope="col" className="py-4 px-6 font-bold">Status</th>
-                <th scope="col" className="py-4 px-6 font-bold text-right">Criacao</th>
+                <th scope="col" className="py-4 px-6 font-bold text-right">Criação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -136,7 +136,7 @@ export default function UsuariosPage() {
                           : "bg-slate-50 text-slate-650 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-855"
                       }`}
                     >
-                      {user.role === "ADMIN" ? "Administrador" : "Usuario"}
+                      {user.role === "ADMIN" ? "Administrador" : "Usuário"}
                     </Badge>
                   </td>
                   <td className="py-4 px-6">

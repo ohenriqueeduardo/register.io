@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     if (!isPublicRegistrationEnabled()) {
-      return failure("Cadastro publico desativado.", 403);
+      return failure("Cadastro público desativado.", 403);
     }
 
     const prisma = getPrisma();
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
-      return failure("Ja existe um usuario com este e-mail.", 409);
+      return failure("Já existe um usuário com este e-mail.", 409);
     }
 
     const passwordHash = await bcrypt.hash(parsed.data.password, 12);
@@ -45,14 +45,14 @@ export async function POST(request: Request) {
     return success(toSafeUser(user), 201);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return failure("JSON invalido.", 400);
+      return failure("JSON inválido.", 400);
     }
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return failure("Ja existe um usuario com este e-mail.", 409);
+      return failure("Já existe um usuário com este e-mail.", 409);
     }
 
     return handleApiError(error);

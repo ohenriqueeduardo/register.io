@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidCNPJ } from "./cnpj";
+
 
 const emptyToUndefined = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? undefined : value;
@@ -7,7 +7,7 @@ const emptyToUndefined = (value: unknown) =>
 const phoneSchema = z.string().trim().refine((value) => {
   const digits = value.replace(/\D/g, "");
   return digits.length === 10 || digits.length === 11;
-}, "Telefone invalido.");
+}, "Telefone inválido.");
 
 const optionalPhoneSchema = z.preprocess(
   emptyToUndefined,
@@ -17,19 +17,19 @@ const optionalPhoneSchema = z.preprocess(
     .refine((value) => {
       const digits = value.replace(/\D/g, "");
       return digits.length === 10 || digits.length === 11;
-    }, "Telefone invalido.")
+    }, "Telefone inválido.")
     .optional(),
 );
 
 const optionalEmailSchema = z.preprocess(
   emptyToUndefined,
-  z.string().trim().email("E-mail invalido.").optional(),
+  z.string().trim().email("E-mail inválido.").optional(),
 );
 
 const catalogMetadataSchema = {
   catalogoUrl: z.preprocess(
     emptyToUndefined,
-    z.string().url("URL do catalogo invalida.").nullable().optional(),
+    z.string().url("URL do catálogo inválida.").nullable().optional(),
   ),
   catalogoNome: z.preprocess(
     emptyToUndefined,
@@ -87,36 +87,48 @@ const apoioFilterSchema = z.preprocess((value) => {
 }, z.boolean().optional());
 
 export const empresaFormSchema = z.object({
-  nomeEmpresa: z.string().trim().min(2, "Nome da empresa obrigatorio."),
-  cnpj: z.string().trim().refine(isValidCNPJ, "CNPJ invalido."),
+  nomeEmpresa: z.string().trim().min(2, "Nome da empresa obrigatório."),
+  cnpj: z
+    .string()
+    .trim()
+    .refine(
+      (val) => val.replace(/\D/g, "").length === 14,
+      "CNPJ deve conter exatamente 14 dígitos.",
+    ),
   nomeRepresentante: z
     .string()
     .trim()
-    .min(2, "Nome do representante obrigatorio."),
+    .min(2, "Nome do representante obrigatório."),
   telefoneRepresentante: phoneSchema,
   telefoneEmpresa: optionalPhoneSchema,
-  email1: z.string().trim().email("E-mail principal invalido."),
+  email1: z.string().trim().email("E-mail principal inválido."),
   email2: optionalEmailSchema,
   trabalhaComApoioCotacoes: z.boolean({
-    required_error: "Informe se trabalha com Apoio Cotacoes.",
+    required_error: "Informe se trabalha com Apoio Cotações.",
   }),
   categoriaId: z.string().trim().min(1, "Selecione uma categoria."),
   especialidades: z.string().optional(),
 });
 
 export const empresaCreateSchema = z.object({
-  nomeEmpresa: z.string().trim().min(2, "Nome da empresa obrigatorio."),
-  cnpj: z.string().trim().refine(isValidCNPJ, "CNPJ invalido."),
+  nomeEmpresa: z.string().trim().min(2, "Nome da empresa obrigatório."),
+  cnpj: z
+    .string()
+    .trim()
+    .refine(
+      (val) => val.replace(/\D/g, "").length === 14,
+      "CNPJ deve conter exatamente 14 dígitos.",
+    ),
   nomeRepresentante: z
     .string()
     .trim()
-    .min(2, "Nome do representante obrigatorio."),
+    .min(2, "Nome do representante obrigatório."),
   telefoneRepresentante: phoneSchema,
   telefoneEmpresa: optionalPhoneSchema,
-  email1: z.string().trim().email("E-mail principal invalido."),
+  email1: z.string().trim().email("E-mail principal inválido."),
   email2: optionalEmailSchema,
   trabalhaComApoioCotacoes: z.boolean({
-    required_error: "Informe se trabalha com Apoio Cotacoes.",
+    required_error: "Informe se trabalha com Apoio Cotações.",
   }),
   categoriaId: z.string().trim().min(1, "Selecione uma categoria."),
   especialidades: especialidadesServerSchema,

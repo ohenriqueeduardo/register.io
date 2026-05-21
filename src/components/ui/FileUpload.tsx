@@ -56,11 +56,11 @@ export function FileUpload({
 
   const validateClientFile = (file: File) => {
     if (!ALLOWED_CATALOG_MIME_TYPES.includes(file.type as never)) {
-      return "Tipo de arquivo nao permitido.";
+      return "Tipo de arquivo não permitido.";
     }
 
     if (file.size > MAX_CATALOG_SIZE) {
-      return "O arquivo excede o limite maximo de 10MB.";
+      return "O arquivo excede o limite máximo de 10MB.";
     }
 
     return null;
@@ -102,7 +102,7 @@ export function FileUpload({
       setSelectedFile(nextFile);
       onFileSelect(uploadedFile);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar catalogo.");
+      setError(err instanceof Error ? err.message : "Erro ao enviar catálogo.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -133,7 +133,7 @@ export function FileUpload({
       setProgress(0);
       onFileSelect(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao remover catalogo.");
+      setError(err instanceof Error ? err.message : "Erro ao remover catálogo.");
     } finally {
       setIsRemoving(false);
     }
@@ -168,6 +168,19 @@ export function FileUpload({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
+  const isExternalLink =
+    Boolean(selectedFile?.url?.startsWith("http")) && !selectedFile?.tamanho;
+
+  const getExternalLinkLabel = (url?: string) => {
+    if (!url) return "Link externo";
+
+    try {
+      return `Link externo - ${new URL(url).hostname.replace(/^www\./, "")}`;
+    } catch {
+      return "Link externo";
+    }
+  };
+
   return (
     <div className="space-y-3">
       <input
@@ -193,7 +206,7 @@ export function FileUpload({
             <div className="w-full max-w-[240px] space-y-3">
               <LoaderIcon className="h-8 w-8 text-primary mx-auto animate-spin" />
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Enviando catalogo...
+                Enviando catálogo...
               </p>
               <Progress value={progress} className="h-1.5 w-full rounded-full" />
             </div>
@@ -204,10 +217,10 @@ export function FileUpload({
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Clique para fazer upload do catalogo
+                  Clique para fazer upload do catálogo
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  PDF, DOC, DOCX, PNG, JPG ou WEBP (Max. 10MB)
+                  PDF, DOC, DOCX, PNG, JPG ou WEBP (Máx. 10MB)
                 </p>
               </div>
             </div>
@@ -225,7 +238,9 @@ export function FileUpload({
                   {selectedFile.nome}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {formatSize(selectedFile.tamanho)}
+                  {isExternalLink
+                    ? getExternalLinkLabel(selectedFile.url)
+                    : formatSize(selectedFile.tamanho)}
                 </p>
               </div>
             </div>
@@ -236,7 +251,7 @@ export function FileUpload({
               onClick={handleRemove}
               disabled={isUploading || isRemoving}
               className="h-8 w-8 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20"
-              title="Remover catalogo"
+              title="Remover catálogo"
             >
               <X className="h-4 w-4" />
             </Button>
