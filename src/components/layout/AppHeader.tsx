@@ -16,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -118,43 +117,27 @@ export function AppHeader({ user, onOpenSidebar, onLogout }: AppHeaderProps) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+                className="flex min-w-[72px] items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white px-3 py-2 text-left shadow-sm shadow-slate-900/5 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800/80 dark:bg-slate-950 dark:shadow-black/20 dark:hover:border-slate-700 dark:hover:bg-slate-900 sm:min-w-[260px]"
               >
-                <div className="hidden md:block">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                <div className="hidden min-w-0 sm:block">
+                  <p className="truncate text-base font-extrabold text-slate-950 dark:text-white">
                     {user.nome}
-                  </p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">
-                    {user.role === "ADMIN" ? "Administrador" : "Usuário"}
                   </p>
                 </div>
 
-                <Avatar className="h-10 w-10 border border-slate-100 shadow-sm dark:border-slate-800">
-                  <AvatarFallback className="bg-primary/5 font-semibold text-primary dark:bg-primary/10 dark:text-primary-foreground">
+                <Avatar className="h-11 w-11 border border-slate-200 shadow-sm ring-2 ring-slate-100 dark:border-slate-700 dark:ring-slate-800">
+                  <AvatarFallback className="bg-primary font-extrabold text-primary-foreground dark:bg-primary dark:text-primary-foreground">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <ChevronDown size={16} className="text-slate-400" />
+                <ChevronDown size={16} className="text-slate-600 dark:text-slate-300" />
               </button>
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
               align="end"
-              className="w-72 rounded-2xl border-slate-200 p-2 dark:border-slate-800"
+              className="w-64 rounded-2xl border-slate-200/80 p-2 shadow-lg shadow-slate-900/10 dark:border-slate-800/80 dark:shadow-black/30"
             >
-              <DropdownMenuLabel className="px-3 py-2">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {user.nome}
-                  </p>
-                  <p className="break-all text-xs font-medium text-slate-500 dark:text-slate-400">
-                    {user.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-
-              <DropdownMenuSeparator />
-
               <DropdownMenuItem asChild className="rounded-xl px-3 py-2.5">
                 <Link href="/configuracoes#perfil" className="gap-2 font-medium">
                   <UserCircle2 size={16} />

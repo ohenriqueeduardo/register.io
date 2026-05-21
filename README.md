@@ -71,7 +71,7 @@ pnpm prisma:seed
 Admin inicial criado pelo seed:
 
 - Email: valor de `ADMIN_EMAIL` ou `admin@sistema.com`
-- Senha: valor de `ADMIN_PASSWORD` ou `Admin@123456` em desenvolvimento
+- Senha: valor de `ADMIN_PASSWORD` ou `34062620` em desenvolvimento
 
 Defina `ADMIN_PASSWORD` antes de rodar o seed em producao.
 

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { failure, handleApiError, success, validationFailure } from "@/lib/api-response";
-import { requireAdmin, requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { deleteCatalogoFromStorage } from "@/lib/storage/catalogo";
 import { cleanCNPJ } from "@/lib/validators/cnpj";
@@ -177,7 +177,7 @@ export async function PUT(request: Request, context: RouteContext) {
 
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
-    const user = await requireAdmin();
+    const user = await requireAuth();
     const { id } = await context.params;
     const prisma = getPrisma();
     const currentEmpresa = await prisma.empresa.findUnique({

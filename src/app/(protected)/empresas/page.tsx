@@ -14,9 +14,11 @@ import {
   Building,
   Upload,
   Download,
+  CheckSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -188,6 +190,10 @@ export default function EmpresasPage() {
   // States de exclusão
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedEmpresaIds, setSelectedEmpresaIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isSelectingAll, setIsSelectingAll] = useState(false);
 
   // Ref para upload de planilha (CSV/Excel)
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -238,6 +244,11 @@ export default function EmpresasPage() {
     try {
       const success = await empresaService.delete(deleteId);
       if (success) {
+        setSelectedEmpresaIds((prev) => {
+          const next = new Set(prev);
+          next.delete(deleteId);
+          return next;
+        });
         await loadEmpresas();
         showSuccess("Empresa excluída com sucesso.");
       } else {
@@ -248,6 +259,40 @@ export default function EmpresasPage() {
     } finally {
       setIsDeleting(false);
       setDeleteId(null);
+    }
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    const idsToDelete = Array.from(selectedEmpresaIds);
+    if (idsToDelete.length === 0) return;
+
+    setIsBulkDeleting(true);
+    let deletedCount = 0;
+    const failedIds: string[] = [];
+
+    try {
+      for (const id of idsToDelete) {
+        try {
+          await empresaService.delete(id);
+          deletedCount++;
+        } catch {
+          failedIds.push(id);
+        }
+      }
+
+      setSelectedEmpresaIds(new Set(failedIds));
+      await loadEmpresas();
+
+      if (deletedCount > 0) {
+        showSuccess(`${deletedCount} empresa(s) excluída(s) com sucesso.`);
+      }
+
+      if (failedIds.length > 0) {
+        showWarning(`${failedIds.length} empresa(s) não puderam ser excluída(s).`);
+      }
+    } finally {
+      setIsBulkDeleting(false);
+      setIsBulkDeleteOpen(false);
     }
   };
 
@@ -628,6 +673,85 @@ export default function EmpresasPage() {
     return pages;
   }, [currentPage, totalPages]);
 
+  const visibleEmpresaIds = React.useMemo(
+    () => paginatedEmpresas.map((emp) => emp.id),
+    [paginatedEmpresas],
+  );
+  const selectedCount = selectedEmpresaIds.size;
+  const selectedVisibleCount = visibleEmpresaIds.filter((id) =>
+    selectedEmpresaIds.has(id),
+  ).length;
+  const areAllVisibleSelected =
+    visibleEmpresaIds.length > 0 && selectedVisibleCount === visibleEmpresaIds.length;
+  const hasVisibleSelection = selectedVisibleCount > 0;
+
+  const handleToggleEmpresaSelection = (
+    empresaId: string,
+    checked: boolean | "indeterminate",
+  ) => {
+    setSelectedEmpresaIds((prev) => {
+      const next = new Set(prev);
+
+      if (checked === true) {
+        next.add(empresaId);
+      } else {
+        next.delete(empresaId);
+      }
+
+      return next;
+    });
+  };
+
+  const handleToggleAllVisible = (checked: boolean | "indeterminate") => {
+    setSelectedEmpresaIds((prev) => {
+      const next = new Set(prev);
+
+      visibleEmpresaIds.forEach((id) => {
+        if (checked === true) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      });
+
+      return next;
+    });
+  };
+
+  const handleSelectAllEmpresas = async () => {
+    setIsSelectingAll(true);
+
+    try {
+      const allEmpresaIds: string[] = [];
+      let page = 1;
+      let totalPagesToLoad = 1;
+
+      do {
+        const response = await empresaService.listPaginated({
+          page,
+          limit: 100,
+          sortBy: "createdAt",
+          sortOrder: "desc",
+        });
+
+        allEmpresaIds.push(...response.items.map((emp) => emp.id));
+        totalPagesToLoad = response.meta.totalPages;
+        page++;
+      } while (page <= totalPagesToLoad);
+
+      setSelectedEmpresaIds(new Set(allEmpresaIds));
+      showSuccess(`${allEmpresaIds.length} empresa(s) selecionada(s).`);
+    } catch (err) {
+      showError(err instanceof Error ? err.message : "Erro ao selecionar todas as empresas.");
+    } finally {
+      setIsSelectingAll(false);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedEmpresaIds(new Set());
+  };
+
   // Reset pagination if filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -748,11 +872,72 @@ export default function EmpresasPage() {
         />
       ) : (
         <div className="space-y-4">
+          <div
+            className={`grid transition-[grid-template-rows,opacity,transform] duration-300 ease-out ${
+              selectedCount > 0
+                ? "grid-rows-[1fr] opacity-100 translate-y-0"
+                : "grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800/80 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-extrabold text-slate-900 dark:text-slate-50">
+                    Seleção de empresas
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {selectedCount} selecionada(s). Selecione linhas para excluir em lote.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectAllEmpresas}
+                    disabled={isSelectingAll}
+                    className="rounded-xl border-slate-200 dark:border-slate-800"
+                  >
+                    <CheckSquare size={16} />
+                    {isSelectingAll ? "Selecionando..." : "Selecionar todas"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearSelection}
+                    className="rounded-xl border-slate-200 dark:border-slate-800"
+                  >
+                    Limpar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setIsBulkDeleteOpen(true)}
+                    className="rounded-xl"
+                  >
+                    <Trash2 size={16} />
+                    Excluir selecionadas
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <Card className="rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-950 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
                 <thead className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/10">
                   <tr>
+                    <th scope="col" className="py-4 pl-6 pr-2 font-bold w-[4%] min-w-[56px]">
+                      <Checkbox
+                        checked={areAllVisibleSelected || (hasVisibleSelection ? "indeterminate" : false)}
+                        onCheckedChange={handleToggleAllVisible}
+                        aria-label="Selecionar todas as empresas visíveis"
+                        className="h-5 w-5 rounded-md"
+                      />
+                    </th>
                     <th scope="col" className="py-4 px-6 font-bold w-[22%] min-w-[150px]">Empresa</th>
                     <th scope="col" className="py-4 px-6 font-bold w-[15%] min-w-[140px]">CNPJ</th>
                     <th scope="col" className="py-4 px-6 font-bold w-[15%] min-w-[120px]">Representante</th>
@@ -770,7 +955,24 @@ export default function EmpresasPage() {
                       "Não definido";
 
                     return (
-                      <tr key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                      <tr
+                        key={emp.id}
+                        className={`transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-900/20 ${
+                          selectedEmpresaIds.has(emp.id)
+                            ? "bg-primary/5 dark:bg-primary/10"
+                            : ""
+                        }`}
+                      >
+                        <td className="py-4 pl-6 pr-2">
+                          <Checkbox
+                            checked={selectedEmpresaIds.has(emp.id)}
+                            onCheckedChange={(checked) =>
+                              handleToggleEmpresaSelection(emp.id, checked)
+                            }
+                            aria-label={`Selecionar ${emp.nomeEmpresa}`}
+                            className="h-5 w-5 rounded-md"
+                          />
+                        </td>
                         <td className="py-4 px-6 font-semibold text-slate-900 dark:text-slate-100 max-w-[200px] break-words">
                           {emp.nomeEmpresa}
                         </td>
@@ -905,6 +1107,18 @@ export default function EmpresasPage() {
           )}
         </div>
       )}
+
+      {/* Confirm Bulk Deletion Dialog */}
+      <ConfirmDialog
+        isOpen={isBulkDeleteOpen}
+        onOpenChange={(open) => !open && setIsBulkDeleteOpen(false)}
+        title="Excluir empresas selecionadas?"
+        description={`Esta ação removerá permanentemente ${selectedCount} empresa(s) selecionada(s) e todos os dados vinculados.`}
+        onConfirm={handleBulkDeleteConfirm}
+        isLoading={isBulkDeleting}
+        confirmText="Excluir selecionadas"
+        cancelText="Voltar"
+      />
 
       {/* Confirm Deletion Dialog */}
       <ConfirmDialog

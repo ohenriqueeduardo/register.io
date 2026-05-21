@@ -6,7 +6,7 @@ import { Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -22,20 +22,28 @@ export function ThemeToggle() {
   }
 
   const isDark = resolvedTheme === "dark";
+  const handleToggleTheme = () => {
+    setTheme(isDark ? "light" : "dark");
+  };
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="h-10 w-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 transition-all duration-200"
+      onClick={handleToggleTheme}
+      className="relative h-10 w-10 overflow-hidden rounded-xl border border-slate-200 bg-transparent transition-[background-color,border-color,transform,box-shadow] duration-300 ease-out hover:scale-105 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800"
       title={isDark ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
     >
-      {isDark ? (
-        <Sun className="h-[1.25rem] w-[1.25rem] text-yellow-500 fill-yellow-500/10 transition-all rotate-0 scale-100 animate-fade-in" />
-      ) : (
-        <Moon className="h-[1.25rem] w-[1.25rem] text-slate-700 fill-slate-700/10 dark:text-slate-400 transition-all rotate-0 scale-100 animate-fade-in" />
-      )}
+      <Sun
+        className={`absolute h-[1.25rem] w-[1.25rem] fill-yellow-500/10 text-yellow-500 transition-[opacity,transform] duration-300 ease-out ${
+          isDark ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-75 opacity-0"
+        }`}
+      />
+      <Moon
+        className={`absolute h-[1.25rem] w-[1.25rem] fill-slate-700/10 text-slate-700 transition-[opacity,transform] duration-300 ease-out dark:text-slate-400 ${
+          isDark ? "-rotate-90 scale-75 opacity-0" : "rotate-0 scale-100 opacity-100"
+        }`}
+      />
       <span className="sr-only">Alternar tema</span>
     </Button>
   );

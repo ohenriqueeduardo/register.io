@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 async function main() {
   const adminEmail = process.env.ADMIN_EMAIL ?? "admin@sistema.com";
   const adminName = process.env.ADMIN_NAME ?? "Administrador";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@123456";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "34062620";
 
-  if (process.env.NODE_ENV === "production" && adminPassword === "Admin@123456") {
+  if (process.env.NODE_ENV === "production" && !process.env.ADMIN_PASSWORD) {
     throw new Error("Defina ADMIN_PASSWORD antes de rodar o seed em producao.");
   }
 
