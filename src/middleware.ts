@@ -1,4 +1,6 @@
+// @ts-expect-error Next.js provides this module during the application build.
 import { NextResponse } from "next/server";
+// @ts-expect-error Next.js provides this module during the application build.
 import type { NextRequest } from "next/server";
 
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minuto
@@ -67,3 +69,4 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: "/api/:path*",
 };
+
