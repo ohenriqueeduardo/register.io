@@ -1,6 +1,26 @@
 import { getPrisma } from "@/lib/prisma";
+import { timingSafeEqual } from "crypto";
 
 export const dynamic = "force-dynamic";
+
+function isAuthorizedCron(authHeader: string | null, cronSecret?: string): boolean {
+  if (!cronSecret) {
+    return true;
+  }
+
+  if (!authHeader) {
+    return false;
+  }
+
+  const expected = Buffer.from(`Bearer ${cronSecret}`);
+  const received = Buffer.from(authHeader);
+
+  if (expected.length !== received.length) {
+    return false;
+  }
+
+  return timingSafeEqual(expected, received);
+}
 
 export async function GET(request: Request) {
   const env = (
@@ -9,12 +29,8 @@ export async function GET(request: Request) {
     }
   ).process?.env;
 
-  // Se houver um CRON_SECRET configurado, valida a autorização
   const authHeader = request.headers.get("authorization");
-  if (
-    env?.CRON_SECRET &&
-    authHeader !== `Bearer ${env.CRON_SECRET}`
-  ) {
+  if (!isAuthorizedCron(authHeader, env?.CRON_SECRET)) {
     return new Response("Não autorizado", { status: 401 });
   }
 

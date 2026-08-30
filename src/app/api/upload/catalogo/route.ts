@@ -7,7 +7,7 @@ import {
   resolveCatalogoPathFromUrl,
   uploadCatalogoToStorage,
 } from "@/lib/storage/catalogo";
-import { validateCatalogFile } from "@/lib/validators/upload";
+import { validateCatalogFileContent } from "@/lib/validators/upload";
 import { withLogging } from "@/lib/api-middleware";
 
 export const runtime = "nodejs";
@@ -32,7 +32,7 @@ export const POST = withLogging(async function POST(request: Request) {
       return failure("Arquivo não enviado.", 400);
     }
 
-    const validationMessage = validateCatalogFile(file);
+    const validationMessage = await validateCatalogFileContent(file);
 
     if (validationMessage) {
       return failure(validationMessage, 400);
@@ -66,16 +66,21 @@ export const DELETE = withLogging(async function DELETE(request: Request) {
     }
 
     const isOwnPendingUpload = path.startsWith(`${user.id}/`);
-    const isPersistedCatalog = parsed.data.url
-      ? Boolean(
-          await getPrisma().empresa.findFirst({
-            where: { catalogoUrl: parsed.data.url },
-            select: { id: true },
-          }),
-        )
-      : false;
+    let isAuthorizedPersistedCatalog = false;
 
-    if (!isOwnPendingUpload && !isPersistedCatalog) {
+    if (parsed.data.url) {
+      const empresa = await getPrisma().empresa.findFirst({
+        where: { catalogoUrl: parsed.data.url },
+        select: { id: true, createdById: true },
+      });
+
+      if (empresa) {
+        isAuthorizedPersistedCatalog =
+          user.role === "ADMIN" || empresa.createdById === user.id;
+      }
+    }
+
+    if (!isOwnPendingUpload && !isAuthorizedPersistedCatalog) {
       return failure("Catálogo não encontrado ou sem permissão para remoção.", 403);
     }
 

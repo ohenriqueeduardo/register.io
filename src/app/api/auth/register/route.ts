@@ -21,30 +21,34 @@ export const POST = withLogging(async function POST(request: Request) {
       return failure("Cadastro público desativado.", 403);
     }
 
-    const prisma = getPrisma();
-    const existingUsersCount = await prisma.user.count();
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email: parsed.data.email },
-      select: { id: true },
-    });
-
-    if (existingUser) {
-      return failure("Já existe um usuário com este e-mail.", 409);
-    }
-
     const passwordHash = await bcrypt.hash(parsed.data.password, 12);
-    const user = await prisma.user.create({
-      data: {
-        nome: parsed.data.nome,
-        email: parsed.data.email,
-        passwordHash,
-        role: existingUsersCount === 0 ? "ADMIN" : "USER",
-      },
+    const user = await prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findUnique({
+        where: { email: parsed.data.email },
+        select: { id: true },
+      });
+
+      if (existingUser) {
+        throw new Error("USER_EXISTS");
+      }
+
+      const existingUsersCount = await tx.user.count();
+      return tx.user.create({
+        data: {
+          nome: parsed.data.nome,
+          email: parsed.data.email,
+          passwordHash,
+          role: existingUsersCount === 0 ? "ADMIN" : "USER",
+        },
+      });
     });
 
     return success(toSafeUser(user), 201);
   } catch (error) {
+    if (error instanceof Error && error.message === "USER_EXISTS") {
+      return failure("Já existe um usuário com este e-mail.", 409);
+    }
+
     if (error instanceof SyntaxError) {
       return failure("JSON inválido.", 400);
     }

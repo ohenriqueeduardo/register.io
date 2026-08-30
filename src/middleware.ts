@@ -17,8 +17,11 @@ function cleanExpiredCache() {
 }
 
 export function middleware(request: NextRequest) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const ip = forwardedFor?.split(",")[0].trim() ?? request.headers.get("x-real-ip") ?? "127.0.0.1";
+  const ip =
+    request.headers.get("x-real-ip")?.trim() ??
+    request.ip ??
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    "127.0.0.1";
 
   // Aplica rate limit apenas nas rotas de API
   if (request.nextUrl.pathname.startsWith("/api")) {

@@ -6,6 +6,8 @@ import { deleteCatalogoFromStorage } from "@/lib/storage/catalogo";
 import { cleanCNPJ } from "@/lib/validators/cnpj";
 import { empresaUpdateSchema } from "@/lib/validators/empresa";
 
+import { withLogging } from "@/lib/api-middleware";
+
 export const runtime = "nodejs";
 
 type RouteContext = {
@@ -70,7 +72,7 @@ function buildUpdateData(
   return updateData;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export const GET = withLogging(async function GET(_request: Request, context: RouteContext) {
   try {
     await requireAuth();
 
@@ -89,9 +91,9 @@ export async function GET(_request: Request, context: RouteContext) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-export async function PUT(request: Request, context: RouteContext) {
+export const PUT = withLogging(async function PUT(request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { id } = await context.params;
@@ -105,11 +107,15 @@ export async function PUT(request: Request, context: RouteContext) {
     const prisma = getPrisma();
     const currentEmpresa = await prisma.empresa.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, createdById: true },
     });
 
     if (!currentEmpresa) {
       return failure("Empresa não encontrada.", 404);
+    }
+
+    if (user.role !== "ADMIN" && currentEmpresa.createdById !== user.id) {
+      return failure("Você não tem permissão para alterar esta empresa.", 403);
     }
 
     if (parsed.data.cnpj) {
@@ -173,9 +179,9 @@ export async function PUT(request: Request, context: RouteContext) {
 
     return handleApiError(error);
   }
-}
+});
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export const DELETE = withLogging(async function DELETE(_request: Request, context: RouteContext) {
   try {
     const user = await requireAuth();
     const { id } = await context.params;
@@ -187,11 +193,16 @@ export async function DELETE(_request: Request, context: RouteContext) {
         cnpj: true,
         nomeEmpresa: true,
         catalogoUrl: true,
+        createdById: true,
       },
     });
 
     if (!currentEmpresa) {
       return failure("Empresa não encontrada.", 404);
+    }
+
+    if (user.role !== "ADMIN" && currentEmpresa.createdById !== user.id) {
+      return failure("Você não tem permissão para excluir esta empresa.", 403);
     }
 
     if (currentEmpresa.catalogoUrl) {
@@ -221,4 +232,4 @@ export async function DELETE(_request: Request, context: RouteContext) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
