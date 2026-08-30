@@ -22,6 +22,7 @@ export const POST = withLogging(async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+    const prisma = getPrisma();
     const user = await prisma.$transaction(async (tx) => {
       const existingUser = await tx.user.findUnique({
         where: { email: parsed.data.email },

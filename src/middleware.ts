@@ -19,7 +19,6 @@ function cleanExpiredCache() {
 export function middleware(request: NextRequest) {
   const ip =
     request.headers.get("x-real-ip")?.trim() ??
-    request.ip ??
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
     "127.0.0.1";
 
