@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { AuthError } from "./auth";
+import { getLogger } from "./logger-context";
 
 type FieldErrors = Record<string, string[]>;
 
@@ -39,6 +40,7 @@ export function handleApiError(error: unknown) {
     return failure(error.message, error.status);
   }
 
-  console.error(error);
+  const logger = getLogger();
+  logger.error({ error }, "Erro interno detectado na rota da API.");
   return failure("Erro interno do servidor.", 500);
 }

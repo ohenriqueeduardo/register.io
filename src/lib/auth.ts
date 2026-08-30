@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import type { User, UserRole } from "@prisma/client";
 import { getPrisma } from "./prisma";
+import { getLogger } from "./logger-context";
 
 export const SESSION_COOKIE = "register_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
@@ -56,7 +57,8 @@ export function verifyAuthToken(token: string) {
     }
 
     return payload;
-  } catch {
+  } catch (err: any) {
+    getLogger().debug({ error: err?.message }, "Falha na validação do token JWT.");
     return null;
   }
 }

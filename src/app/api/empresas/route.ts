@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { cleanCNPJ } from "@/lib/validators/cnpj";
 import { empresaCreateSchema, empresaListQuerySchema } from "@/lib/validators/empresa";
+import { withLogging } from "@/lib/api-middleware";
 
 export const runtime = "nodejs";
 
@@ -64,7 +65,7 @@ function buildWhere(query: ReturnType<typeof empresaListQuerySchema.parse>) {
   return and.length > 0 ? { AND: and } : {};
 }
 
-export async function GET(request: Request) {
+export const GET = withLogging(async function GET(request: Request) {
   try {
     await requireAuth();
 
@@ -106,9 +107,9 @@ export async function GET(request: Request) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withLogging(async function POST(request: Request) {
   try {
     const user = await requireAuth();
     const body = await request.json();
@@ -189,4 +190,4 @@ export async function POST(request: Request) {
 
     return handleApiError(error);
   }
-}
+});

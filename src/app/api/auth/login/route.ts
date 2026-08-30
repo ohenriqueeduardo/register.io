@@ -7,10 +7,11 @@ import {
 import { failure, handleApiError, success, validationFailure } from "@/lib/api-response";
 import { getPrisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators/auth";
+import { withLogging } from "@/lib/api-middleware";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
+export const POST = withLogging(async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = loginSchema.safeParse(body);
@@ -53,4 +54,4 @@ export async function POST(request: Request) {
 
     return handleApiError(error);
   }
-}
+});

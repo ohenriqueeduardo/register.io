@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { getLogger } from "./logger-context";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -27,7 +28,11 @@ function getRuntimeDatabaseUrl() {
     }
 
     return url.toString();
-  } catch {
+  } catch (err: any) {
+    getLogger().warn(
+      { error: err?.message },
+      "Falha ao processar URL do banco de dados. Utilizando string original."
+    );
     return databaseUrl;
   }
 }

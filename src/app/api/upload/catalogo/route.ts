@@ -8,6 +8,7 @@ import {
   uploadCatalogoToStorage,
 } from "@/lib/storage/catalogo";
 import { validateCatalogFile } from "@/lib/validators/upload";
+import { withLogging } from "@/lib/api-middleware";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,7 @@ const deleteCatalogoSchema = z
     path: ["url"],
   });
 
-export async function POST(request: Request) {
+export const POST = withLogging(async function POST(request: Request) {
   try {
     const user = await requireAuth();
     const formData = await request.formData();
@@ -43,9 +44,9 @@ export async function POST(request: Request) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
-export async function DELETE(request: Request) {
+export const DELETE = withLogging(async function DELETE(request: Request) {
   try {
     const user = await requireAuth();
 
@@ -88,4 +89,4 @@ export async function DELETE(request: Request) {
 
     return handleApiError(error);
   }
-}
+});
