@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Save, Building, User, Mail, FolderOpen, Tag, FileText, AlertTriangle } from "lucide-react";
+import { ChevronLeft, Save, Building, User, Mail, FolderOpen, Tag, FileText, AlertTriangle, Search, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +46,7 @@ export default function EditarEmpresaPage({ params }: PageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [catalogoFile, setCatalogoFile] = useState<CatalogoFileInfo | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFetchingCnpj, setIsFetchingCnpj] = useState(false);
   const catalogoFileRef = useRef<CatalogoFileInfo | null>(null);
   const didSaveRef = useRef(false);
 
@@ -72,6 +73,7 @@ export default function EditarEmpresaPage({ params }: PageProps) {
     setValue,
     reset,
     watch,
+    getValues,
     formState: { errors },
   } = useForm<EmpresaFormValues>({
     resolver: zodResolver(empresaFormSchema),
@@ -80,6 +82,62 @@ export default function EditarEmpresaPage({ params }: PageProps) {
   const cnpjValue = watch("cnpj") ?? "";
   const cnpjDigits = cnpjValue.replace(/\D/g, "");
   const showCnpjAlert = cnpjDigits.length === 14 && !isValidCNPJ(cnpjDigits);
+
+  const fetchCnpjData = async (digits: string, isManual = false) => {
+    if (digits.length !== 14 || !isValidCNPJ(digits) || isFetchingCnpj) {
+      if (isManual) {
+        showError("Informe um CNPJ válido com 14 dígitos.");
+      }
+      return;
+    }
+
+    setIsFetchingCnpj(true);
+
+    try {
+      const res = await fetch(`/api/integracoes/cnpj/${digits}`);
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        if (isManual) {
+          showError(json.message || "CNPJ não localizado na base da Receita.");
+        }
+        return;
+      }
+
+      const data = json.data;
+      const currentValues = getValues();
+
+      if (!currentValues.nomeEmpresa || isManual) {
+        setValue("nomeEmpresa", data.razaoSocial || data.nomeFantasia || "", {
+          shouldValidate: true,
+        });
+      }
+
+      if (data.email && (!currentValues.email1 || isManual)) {
+        setValue("email1", data.email.toLowerCase(), { shouldValidate: true });
+      }
+
+      if (data.telefone && (!currentValues.telefoneEmpresa || isManual)) {
+        setValue("telefoneEmpresa", formatPhone(data.telefone), {
+          shouldValidate: true,
+        });
+      }
+
+      if (data.cnaePrincipal && (!currentValues.especialidades || isManual)) {
+        setValue("especialidades", data.cnaePrincipal, {
+          shouldValidate: true,
+        });
+      }
+
+      showSuccess("Dados da Receita Federal carregados com sucesso!");
+    } catch {
+      if (isManual) {
+        showError("Falha na consulta automática de CNPJ.");
+      }
+    } finally {
+      setIsFetchingCnpj(false);
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -205,47 +263,59 @@ export default function EditarEmpresaPage({ params }: PageProps) {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pb-12">
         {/* Seção 1: Dados da Empresa */}
         <Card className="rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-950 p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3">
-            <Building size={20} className="text-primary" />
-            <span>Dados da Empresa</span>
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100">
+              <Building size={20} className="text-primary" />
+              <span>Dados da Empresa</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-cyan-600 dark:text-cyan-400 font-medium">
+              <Sparkles size={14} />
+              <span>Autopreenchimento ativo via Receita Federal</span>
+            </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="nomeEmpresa" className="font-semibold text-slate-700 dark:text-slate-300">
-                Nome da Empresa <span className="text-rose-500">*</span>
-              </Label>
-              <Input
-                id="nomeEmpresa"
-                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                {...register("nomeEmpresa")}
-                disabled={isSaving}
-              />
-              {errors.nomeEmpresa && (
-                <p className="text-xs text-rose-500">{errors.nomeEmpresa.message}</p>
-              )}
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="cnpj" className="font-semibold text-slate-700 dark:text-slate-300">
                 CNPJ <span className="text-rose-500">*</span>
               </Label>
-              <Controller
-                name="cnpj"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    id="cnpj"
-                    placeholder="00.000.000/0000-00"
-                    className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                    onChange={(e) => {
-                      const masked = formatCNPJ(e.target.value);
-                      setValue("cnpj", masked, { shouldValidate: true });
-                    }}
-                    disabled={isSaving}
-                  />
-                )}
-              />
+              <div className="flex gap-2">
+                <Controller
+                  name="cnpj"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="cnpj"
+                      placeholder="00.000.000/0000-00"
+                      className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                      onChange={(e) => {
+                        const masked = formatCNPJ(e.target.value);
+                        setValue("cnpj", masked, { shouldValidate: true });
+                        const digits = masked.replace(/\D/g, "");
+                        if (digits.length === 14 && isValidCNPJ(digits)) {
+                          fetchCnpjData(digits);
+                        }
+                      }}
+                      disabled={isSaving || isFetchingCnpj}
+                    />
+                  )}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 shrink-0 rounded-xl border-slate-200 dark:border-slate-800"
+                  onClick={() => fetchCnpjData(cnpjDigits, true)}
+                  disabled={isSaving || isFetchingCnpj || cnpjDigits.length !== 14}
+                  title="Consultar dados do CNPJ na Receita Federal"
+                >
+                  {isFetchingCnpj ? (
+                    <Loader2 size={16} className="animate-spin text-primary" />
+                  ) : (
+                    <Search size={16} />
+                  )}
+                </Button>
+              </div>
               {errors.cnpj && (
                 <p className="text-xs text-rose-500">{errors.cnpj.message}</p>
               )}
@@ -257,6 +327,21 @@ export default function EditarEmpresaPage({ params }: PageProps) {
                     A alteração será salva normalmente, mas o cadastro ficará sinalizado para revisão administrativa.
                   </p>
                 </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nomeEmpresa" className="font-semibold text-slate-700 dark:text-slate-300">
+                Nome da Empresa / Razão Social <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                id="nomeEmpresa"
+                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                {...register("nomeEmpresa")}
+                disabled={isSaving || isFetchingCnpj}
+              />
+              {errors.nomeEmpresa && (
+                <p className="text-xs text-rose-500">{errors.nomeEmpresa.message}</p>
               )}
             </div>
           </div>
