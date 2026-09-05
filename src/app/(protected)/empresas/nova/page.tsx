@@ -2,7 +2,20 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Save, Building, User, Mail, FolderOpen, Tag, FileText, AlertTriangle } from "lucide-react";
+import {
+  ChevronLeft,
+  Save,
+  Building,
+  User,
+  Mail,
+  FolderOpen,
+  Tag,
+  FileText,
+  AlertTriangle,
+  Search,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,14 +41,17 @@ import {
 } from "@/lib/services/catalogoUploadService";
 import { categoriaService } from "@/lib/services/categoriaService";
 import { Categoria } from "@/types";
-import { showSuccess, showError } from "@/utils/toast";
+import { showSuccess, showError, showInfo } from "@/utils/toast";
 import Link from "next/link";
+import confetti from "canvas-confetti";
 
 export default function NovaEmpresaPage() {
   const router = useRouter();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [catalogoFile, setCatalogoFile] = useState<CatalogoFileInfo | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFetchingCnpj, setIsFetchingCnpj] = useState(false);
+  const lastFetchedCnpjRef = useRef<string>("");
   const catalogoFileRef = useRef<CatalogoFileInfo | null>(null);
   const didSaveRef = useRef(false);
 
@@ -73,6 +89,7 @@ export default function NovaEmpresaPage() {
     control,
     setValue,
     watch,
+    getValues,
     formState: { errors },
   } = useForm<EmpresaFormValues>({
     resolver: zodResolver(empresaFormSchema),
@@ -94,11 +111,74 @@ export default function NovaEmpresaPage() {
   const cnpjDigits = cnpjValue.replace(/\D/g, "");
   const showCnpjAlert = cnpjDigits.length === 14 && !isValidCNPJ(cnpjDigits);
 
+  const fetchCnpjData = async (digits: string, isManual = false) => {
+    if (digits.length !== 14 || !isValidCNPJ(digits) || isFetchingCnpj) {
+      if (isManual) {
+        showError("Informe um CNPJ válido com 14 dígitos.");
+      }
+      return;
+    }
+
+    if (lastFetchedCnpjRef.current === digits && !isManual) {
+      return;
+    }
+
+    setIsFetchingCnpj(true);
+    lastFetchedCnpjRef.current = digits;
+
+    try {
+      const res = await fetch(`/api/integracoes/cnpj/${digits}`);
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        if (isManual) {
+          showError(json.message || "CNPJ não localizado na base da Receita.");
+        }
+        return;
+      }
+
+      const data = json.data;
+
+      // Autopreenchimento se os campos estiverem vazios ou se for busca manual
+      const currentValues = getValues();
+
+      if (!currentValues.nomeEmpresa || isManual) {
+        setValue("nomeEmpresa", data.razaoSocial || data.nomeFantasia || "", {
+          shouldValidate: true,
+        });
+      }
+
+      if (data.email && (!currentValues.email1 || isManual)) {
+        setValue("email1", data.email.toLowerCase(), { shouldValidate: true });
+      }
+
+      if (data.telefone && (!currentValues.telefoneEmpresa || isManual)) {
+        setValue("telefoneEmpresa", formatPhone(data.telefone), {
+          shouldValidate: true,
+        });
+      }
+
+      if (data.cnaePrincipal && (!currentValues.especialidades || isManual)) {
+        setValue("especialidades", data.cnaePrincipal, {
+          shouldValidate: true,
+        });
+      }
+
+      showSuccess("Dados da Receita Federal preenchidos automaticamente!");
+    } catch {
+      if (isManual) {
+        showError("Falha na consulta automática de CNPJ.");
+      }
+    } finally {
+      setIsFetchingCnpj(false);
+    }
+  };
+
   const onSubmit = async (values: EmpresaFormValues) => {
     setIsSaving(true);
     try {
       const especialidadesArray = values.especialidades
-        ? values.especialidades.split(",").map(s => s.trim()).filter(Boolean)
+        ? values.especialidades.split(",").map((s) => s.trim()).filter(Boolean)
         : [];
 
       await empresaService.create({
@@ -118,6 +198,17 @@ export default function NovaEmpresaPage() {
         catalogoUrl: catalogoFile?.url ?? null,
       });
 
+      // Efeito de conquista / delight
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      } catch {
+        // Ignora se não conseguir disparar confetes
+      }
+
       showSuccess("Empresa cadastrada com sucesso!");
       didSaveRef.current = true;
       router.push("/empresas");
@@ -134,7 +225,11 @@ export default function NovaEmpresaPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/empresas">
-          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950"
+          >
             <ChevronLeft size={20} />
           </Button>
         </Link>
@@ -151,48 +246,59 @@ export default function NovaEmpresaPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pb-12">
         {/* Seção 1: Dados da Empresa */}
         <Card className="rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-950 p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3">
-            <Building size={20} className="text-primary" />
-            <span>Dados da Empresa</span>
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-slate-100">
+              <Building size={20} className="text-primary" />
+              <span>Dados da Empresa</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-cyan-600 dark:text-cyan-400 font-medium">
+              <Sparkles size={14} />
+              <span>Autopreenchimento ativo via Receita Federal</span>
+            </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="nomeEmpresa" className="font-semibold text-slate-700 dark:text-slate-300">
-                Nome da Empresa <span className="text-rose-500">*</span>
-              </Label>
-              <Input
-                id="nomeEmpresa"
-                placeholder="Ex: TechNova Solutions Ltda"
-                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                {...register("nomeEmpresa")}
-                disabled={isSaving}
-              />
-              {errors.nomeEmpresa && (
-                <p className="text-xs text-rose-500">{errors.nomeEmpresa.message}</p>
-              )}
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="cnpj" className="font-semibold text-slate-700 dark:text-slate-300">
                 CNPJ <span className="text-rose-500">*</span>
               </Label>
-              <Controller
-                name="cnpj"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    id="cnpj"
-                    placeholder="00.000.000/0000-00"
-                    className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                    onChange={(e) => {
-                      const masked = formatCNPJ(e.target.value);
-                      setValue("cnpj", masked, { shouldValidate: true });
-                    }}
-                    disabled={isSaving}
-                  />
-                )}
-              />
+              <div className="flex gap-2">
+                <Controller
+                  name="cnpj"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="cnpj"
+                      placeholder="00.000.000/0000-00"
+                      className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                      onChange={(e) => {
+                        const masked = formatCNPJ(e.target.value);
+                        setValue("cnpj", masked, { shouldValidate: true });
+                        const digits = masked.replace(/\D/g, "");
+                        if (digits.length === 14 && isValidCNPJ(digits)) {
+                          fetchCnpjData(digits);
+                        }
+                      }}
+                      disabled={isSaving || isFetchingCnpj}
+                    />
+                  )}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 shrink-0 rounded-xl border-slate-200 dark:border-slate-800"
+                  onClick={() => fetchCnpjData(cnpjDigits, true)}
+                  disabled={isSaving || isFetchingCnpj || cnpjDigits.length !== 14}
+                  title="Consultar dados do CNPJ na Receita Federal"
+                >
+                  {isFetchingCnpj ? (
+                    <Loader2 size={16} className="animate-spin text-primary" />
+                  ) : (
+                    <Search size={16} />
+                  )}
+                </Button>
+              </div>
               {errors.cnpj && (
                 <p className="text-xs text-rose-500">{errors.cnpj.message}</p>
               )}
@@ -204,6 +310,22 @@ export default function NovaEmpresaPage() {
                     O cadastro será salvo normalmente, mas ficará marcado para revisão administrativa.
                   </p>
                 </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nomeEmpresa" className="font-semibold text-slate-700 dark:text-slate-300">
+                Nome da Empresa / Razão Social <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                id="nomeEmpresa"
+                placeholder="Ex: TechNova Solutions Ltda"
+                className="h-11 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                {...register("nomeEmpresa")}
+                disabled={isSaving || isFetchingCnpj}
+              />
+              {errors.nomeEmpresa && (
+                <p className="text-xs text-rose-500">{errors.nomeEmpresa.message}</p>
               )}
             </div>
           </div>
@@ -384,14 +506,28 @@ export default function NovaEmpresaPage() {
                     disabled={isSaving}
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="sim" id="apoio-sim" className="border-slate-300 text-primary focus:ring-primary" />
-                      <Label htmlFor="apoio-sim" className="cursor-pointer font-medium text-slate-700 dark:text-slate-300">
+                      <RadioGroupItem
+                        value="sim"
+                        id="apoio-sim"
+                        className="border-slate-300 text-primary focus:ring-primary"
+                      />
+                      <Label
+                        htmlFor="apoio-sim"
+                        className="cursor-pointer font-medium text-slate-700 dark:text-slate-300"
+                      >
                         Sim, trabalha
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="nao" id="apoio-nao" className="border-slate-300 text-primary focus:ring-primary" />
-                      <Label htmlFor="apoio-nao" className="cursor-pointer font-medium text-slate-700 dark:text-slate-300">
+                      <RadioGroupItem
+                        value="nao"
+                        id="apoio-nao"
+                        className="border-slate-300 text-primary focus:ring-primary"
+                      />
+                      <Label
+                        htmlFor="apoio-nao"
+                        className="cursor-pointer font-medium text-slate-700 dark:text-slate-300"
+                      >
                         Não trabalha
                       </Label>
                     </div>
@@ -405,7 +541,10 @@ export default function NovaEmpresaPage() {
 
             {/* Especialidades Input */}
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="especialidades" className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Label
+                htmlFor="especialidades"
+                className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
+              >
                 <Tag size={14} className="text-slate-400" />
                 Especialidades <span className="text-slate-400 font-normal">(Separadas por vírgula)</span>
               </Label>
@@ -432,9 +571,7 @@ export default function NovaEmpresaPage() {
           <p className="text-sm text-slate-550 dark:text-slate-400">
             Adicione o portfólio de produtos ou catálogo visual da empresa parceira para visualização e download rápidos na página de detalhes.
           </p>
-          <FileUpload
-            onFileSelect={(file) => setCatalogoFile(file)}
-          />
+          <FileUpload onFileSelect={(file) => setCatalogoFile(file)} />
         </Card>
 
         {/* Action Buttons */}

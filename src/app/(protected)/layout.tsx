@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import AppLayout from "@/components/Layout";
 import { getCurrentUser } from "@/lib/auth";
+import { CommandMenu } from "@/components/ui/CommandMenu";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function ProtectedLayout({
         role: user.role,
       }}
     >
+      <CommandMenu userRole={user.role} />
       {children}
     </AppLayout>
   );
