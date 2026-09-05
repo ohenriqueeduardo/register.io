@@ -21,12 +21,38 @@ export const POST = withLogging(async function POST(request: Request) {
     }
 
     const prisma = getPrisma();
-    const user = await prisma.user.findUnique({
-      where: { email: parsed.data.email },
+    const identifier = parsed.data.email.trim().toLowerCase();
+
+    // Permite login por e-mail ou nome de usuário
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { username: identifier },
+        ],
+      },
     });
 
     if (!user) {
       return failure("Credenciais inválidas.", 401);
+    }
+
+    // Validação de exclusão / soft delete
+    if (user.deletedAt) {
+      return failure("Esta conta foi desativada ou removida.", 403);
+    }
+
+    // Validação de status da conta
+    if (user.status === "BLOCKED") {
+      return failure("Sua conta está bloqueada por segurança. Contate a administração.", 403);
+    }
+
+    if (user.status === "SUSPENDED") {
+      return failure("Sua conta está temporariamente suspensa.", 403);
+    }
+
+    if (user.status === "INACTIVE") {
+      return failure("Sua conta está inativa.", 403);
     }
 
     const passwordMatches = await bcrypt.compare(
@@ -38,8 +64,15 @@ export const POST = withLogging(async function POST(request: Request) {
       return failure("Credenciais inválidas.", 401);
     }
 
-    const token = signAuthToken(user);
-    const response = success(toSafeUser(user));
+    // Atualiza data do último login
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    const token = signAuthToken(updatedUser);
+    const safeUser = toSafeUser(updatedUser);
+    const response = success(safeUser);
 
     response.cookies.set({
       ...getSessionCookieOptions(),

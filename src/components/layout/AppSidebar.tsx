@@ -9,6 +9,7 @@ import {
   PlusCircle,
   FolderOpen,
   Users,
+  ShieldAlert,
   X,
 } from "lucide-react";
 import { SystemLogo } from "@/components/brand/SystemLogo";
@@ -28,17 +29,33 @@ export function AppSidebar({
   const pathname = usePathname();
   const [isHovered, setIsHovered] = useState(false);
 
-  const menuItems = [
+  const menuItems: Array<{
+    label: string;
+    href: string;
+    icon: any;
+    roleRestriction?: string[];
+  }> = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { label: "Empresas", href: "/empresas", icon: Building },
     { label: "Nova Empresa", href: "/empresas/nova", icon: PlusCircle },
     { label: "Categorias", href: "/categorias", icon: FolderOpen },
-    { label: "Usuários", href: "/usuarios", icon: Users, roleRestriction: "ADMIN" },
+    {
+      label: "Usuários",
+      href: "/usuarios",
+      icon: Users,
+      roleRestriction: ["ADMIN", "MASTER_ADMIN"],
+    },
+    {
+      label: "Painel Master",
+      href: "/master/dashboard",
+      icon: ShieldAlert,
+      roleRestriction: ["MASTER_ADMIN"],
+    },
   ];
 
   // Filtra itens baseando-se no papel do usuário
   const filteredMenuItems = menuItems.filter(
-    (item) => !item.roleRestriction || userRole === item.roleRestriction
+    (item) => !item.roleRestriction || item.roleRestriction.includes(userRole || "")
   );
 
   // O menu desktop retrátil é permanentemente colapsado por padrão e expande sob hover

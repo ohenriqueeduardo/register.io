@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import type { User, UserRole } from "@prisma/client";
+import type { User, UserRole, UserStatus } from "@prisma/client";
 import { getPrisma } from "./prisma";
 import { getLogger } from "./logger-context";
 
@@ -11,12 +11,22 @@ type AuthTokenPayload = {
   sub: string;
   email: string;
   role: UserRole;
+  tokenVersion?: number;
 };
 
 export type CurrentUser = Omit<User, "passwordHash">;
 export type SafeUser = Pick<
   User,
-  "id" | "nome" | "email" | "role" | "createdAt" | "updatedAt"
+  | "id"
+  | "nome"
+  | "email"
+  | "role"
+  | "status"
+  | "username"
+  | "mustChangePassword"
+  | "createdAt"
+  | "updatedAt"
+  | "lastLoginAt"
 >;
 
 function getJwtSecret() {
@@ -36,12 +46,15 @@ export function isPublicRegistrationEnabled() {
   );
 }
 
-export function signAuthToken(user: Pick<User, "id" | "email" | "role">) {
+export function signAuthToken(
+  user: Pick<User, "id" | "email" | "role"> & { tokenVersion?: number },
+) {
   return jwt.sign(
     {
       sub: user.id,
       email: user.email,
       role: user.role,
+      tokenVersion: user.tokenVersion ?? 0,
     } satisfies AuthTokenPayload,
     getJwtSecret(),
     { expiresIn: SESSION_TTL_SECONDS },
@@ -83,14 +96,34 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     select: {
       id: true,
       nome: true,
+      username: true,
       email: true,
       role: true,
+      status: true,
+      mustChangePassword: true,
+      tokenVersion: true,
+      lastLoginAt: true,
+      deletedAt: true,
+      permissions: true,
       createdAt: true,
       updatedAt: true,
     },
   });
 
   if (!user) {
+    return null;
+  }
+
+  // Se a conta estiver desativada, bloqueada, suspensa ou com soft delete, nega a sessão
+  if (user.deletedAt !== null || user.status !== "ACTIVE") {
+    return null;
+  }
+
+  // Se o tokenVersion não corresponder (sessão revogada remotamente), invalida
+  if (
+    typeof payload.tokenVersion === "number" &&
+    payload.tokenVersion !== user.tokenVersion
+  ) {
     return null;
   }
 
@@ -110,8 +143,18 @@ export async function requireAuth() {
 export async function requireAdmin() {
   const user = await requireAuth();
 
-  if (user.role !== "ADMIN") {
-    throw new AuthError("Sem permissão.", 403);
+  if (user.role !== "ADMIN" && user.role !== "MASTER_ADMIN") {
+    throw new AuthError("Sem permissão de administrador.", 403);
+  }
+
+  return user;
+}
+
+export async function requireMasterAdmin() {
+  const user = await requireAuth();
+
+  if (user.role !== "MASTER_ADMIN") {
+    throw new AuthError("Acesso restrito ao Administrador Master.", 403);
   }
 
   return user;
@@ -128,14 +171,18 @@ export function getSessionCookieOptions() {
   };
 }
 
-export function toSafeUser(user: SafeUser): SafeUser {
+export function toSafeUser(user: Partial<SafeUser> & { id: string; nome: string; email: string; role: UserRole }): SafeUser {
   return {
     id: user.id,
     nome: user.nome,
     email: user.email,
     role: user.role,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+    status: (user.status as UserStatus) || "ACTIVE",
+    username: user.username || null,
+    mustChangePassword: Boolean(user.mustChangePassword),
+    lastLoginAt: user.lastLoginAt || null,
+    createdAt: user.createdAt || new Date(),
+    updatedAt: user.updatedAt || new Date(),
   };
 }
 

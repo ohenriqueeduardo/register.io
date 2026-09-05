@@ -1,31 +1,68 @@
-import { PrismaClient, UserRole } from "@prisma/client";
+import { PrismaClient, UserRole, UserStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  // 1. Provisionamento do Administrador Master (Fixo & Seguro)
+  const masterEmail = process.env.MASTER_ADMIN_EMAIL ?? "admin@savezone.local";
+  const masterUsername = "masteradmin";
+  const masterName = process.env.MASTER_ADMIN_NAME ?? "Master Admin";
+  const masterPassword =
+    process.env.MASTER_ADMIN_PASSWORD ?? "Master@SaveZone2026!Secure";
+
+  const masterPasswordHash = await bcrypt.hash(masterPassword, 12);
+
+  await prisma.user.upsert({
+    where: { email: masterEmail },
+    update: {
+      role: UserRole.MASTER_ADMIN,
+      username: masterUsername,
+    },
+    create: {
+      nome: masterName,
+      username: masterUsername,
+      email: masterEmail,
+      passwordHash: masterPasswordHash,
+      role: UserRole.MASTER_ADMIN,
+      status: UserStatus.ACTIVE,
+      mustChangePassword: true,
+      tokenVersion: 0,
+    },
+  });
+
+  // 2. Administrador Padrão Legado (mantido para retrocompatibilidade)
   const adminEmail = process.env.ADMIN_EMAIL ?? "admin@sistema.com";
   const adminName = process.env.ADMIN_NAME ?? "Administrador";
   const adminPassword = process.env.ADMIN_PASSWORD ?? "34062620";
-
-  if (process.env.NODE_ENV === "production" && !process.env.ADMIN_PASSWORD) {
-    throw new Error("Defina ADMIN_PASSWORD antes de rodar o seed em producao.");
-  }
 
   const passwordHash = await bcrypt.hash(adminPassword, 12);
 
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {
-      nome: adminName,
-      passwordHash,
-      role: UserRole.ADMIN,
-    },
+    update: {},
     create: {
       nome: adminName,
       email: adminEmail,
       passwordHash,
       role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  // 3. Configurações Padrão da Plataforma
+  await prisma.systemSetting.upsert({
+    where: { key: "platform_settings" },
+    update: {},
+    create: {
+      key: "platform_settings",
+      value: {
+        allowPublicRegistration: true,
+        maintenanceMode: false,
+        sessionTimeoutMinutes: 60 * 24 * 7,
+        passwordMinLength: 6,
+        requireSpecialChars: false,
+      },
     },
   });
 

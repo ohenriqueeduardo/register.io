@@ -8,21 +8,43 @@ datasource db {
 }
 
 enum UserRole {
+  MASTER_ADMIN
   ADMIN
   USER
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+  INACTIVE
+}
+
 model User {
-  id                 String     @id @default(cuid())
-  nome               String
-  email              String     @unique
-  passwordHash       String
-  role               UserRole   @default(USER)
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
-  empresasCriadas    Empresa[]  @relation("EmpresaCreatedBy")
-  empresasAtualizadas Empresa[] @relation("EmpresaUpdatedBy")
-  auditLogs          AuditLog[]
+  id                  String         @id @default(cuid())
+  nome                String
+  username            String?        @unique
+  email               String         @unique
+  passwordHash        String
+  role                UserRole       @default(USER)
+  status              UserStatus     @default(ACTIVE)
+  mustChangePassword  Boolean        @default(false)
+  tokenVersion        Int            @default(0)
+  lastLoginAt         DateTime?
+  deletedAt           DateTime?
+  permissions         String[]       @default([])
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  empresasCriadas     Empresa[]      @relation("EmpresaCreatedBy")
+  empresasAtualizadas Empresa[]      @relation("EmpresaUpdatedBy")
+  auditLogs           AuditLog[]     @relation("UserAudits")
+  targetAuditLogs     AuditLog[]     @relation("TargetUserAudits")
+  settingsUpdated     SystemSetting[]
+
+  @@index([role])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([createdAt])
 }
 
 model Categoria {
@@ -65,16 +87,32 @@ model Empresa {
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  action    String
-  entity    String
-  entityId  String?
-  userId    String?
-  metadata  Json?
-  createdAt DateTime @default(now())
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id           String    @id @default(cuid())
+  action       String
+  entity       String
+  entityId     String?
+  userId       String?
+  targetUserId String?
+  ipAddress    String?
+  status       String?   @default("SUCCESS")
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  user         User?     @relation("UserAudits", fields: [userId], references: [id], onDelete: SetNull)
+  targetUser   User?     @relation("TargetUserAudits", fields: [targetUserId], references: [id], onDelete: SetNull)
 
   @@index([entity, entityId])
   @@index([userId])
+  @@index([targetUserId])
   @@index([createdAt])
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([key])
 }

@@ -21,7 +21,7 @@ export default function UsuariosPage() {
       try {
         const currentUser = await authService.getCurrentUser();
 
-        if (!currentUser || currentUser.role !== "ADMIN") {
+        if (!currentUser || (currentUser.role !== "ADMIN" && currentUser.role !== "MASTER_ADMIN")) {
           showError("Acesso negado. Apenas administradores podem gerenciar usuários.");
           router.replace("/dashboard");
           return;
@@ -131,12 +131,18 @@ export default function UsuariosPage() {
                     <Badge
                       variant="outline"
                       className={`rounded-xl px-3 py-1 font-bold ${
-                        user.role === "ADMIN"
+                        user.role === "MASTER_ADMIN"
+                          ? "bg-amber-500/10 text-amber-500 border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30"
+                          : user.role === "ADMIN"
                           ? "bg-indigo-50/50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30"
                           : "bg-slate-50 text-slate-650 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-855"
                       }`}
                     >
-                      {user.role === "ADMIN" ? "Administrador" : "Usuário"}
+                      {user.role === "MASTER_ADMIN"
+                        ? "Master Admin"
+                        : user.role === "ADMIN"
+                        ? "Administrador"
+                        : "Usuário"}
                     </Badge>
                   </td>
                   <td className="py-4 px-6">

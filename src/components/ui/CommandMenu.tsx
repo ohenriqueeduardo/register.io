@@ -13,6 +13,8 @@ import {
   Search,
   LogOut,
   Sparkles,
+  ShieldAlert,
+  History,
 } from "lucide-react";
 import { authService } from "@/lib/services/authService";
 
@@ -79,6 +81,46 @@ export function CommandMenu({ userRole }: CommandMenuProps) {
               Nenhum resultado encontrado.
             </Command.Empty>
 
+            {/* Painel Master Admin */}
+            {userRole === "MASTER_ADMIN" && (
+              <Command.Group
+                heading={
+                  <span className="text-[11px] font-bold tracking-wider uppercase text-amber-500 px-2 py-1 block">
+                    Painel Master Admin
+                  </span>
+                }
+              >
+                <Command.Item
+                  onSelect={() => runCommand(() => router.push("/master/dashboard"))}
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer aria-selected:bg-amber-500/10 aria-selected:text-amber-400 transition"
+                >
+                  <ShieldAlert className="w-4 h-4 text-amber-400" />
+                  <span>Dashboard Master</span>
+                </Command.Item>
+                <Command.Item
+                  onSelect={() => runCommand(() => router.push("/master/usuarios"))}
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer aria-selected:bg-amber-500/10 aria-selected:text-amber-400 transition"
+                >
+                  <Users className="w-4 h-4 text-amber-400" />
+                  <span>Gerenciamento de Usuários</span>
+                </Command.Item>
+                <Command.Item
+                  onSelect={() => runCommand(() => router.push("/master/administradores"))}
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer aria-selected:bg-amber-500/10 aria-selected:text-amber-400 transition"
+                >
+                  <ShieldAlert className="w-4 h-4 text-amber-400" />
+                  <span>Gerenciamento de Administradores</span>
+                </Command.Item>
+                <Command.Item
+                  onSelect={() => runCommand(() => router.push("/master/logs"))}
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer aria-selected:bg-amber-500/10 aria-selected:text-amber-400 transition"
+                >
+                  <History className="w-4 h-4 text-amber-400" />
+                  <span>Auditoria & Logs</span>
+                </Command.Item>
+              </Command.Group>
+            )}
+
             {/* Ações Rápidas */}
             <Command.Group
               heading={
@@ -128,7 +170,7 @@ export function CommandMenu({ userRole }: CommandMenuProps) {
                 <span>Categorias de Parceiros</span>
               </Command.Item>
 
-              {userRole === "ADMIN" && (
+              {(userRole === "ADMIN" || userRole === "MASTER_ADMIN") && (
                 <Command.Item
                   onSelect={() => runCommand(() => router.push("/usuarios"))}
                   className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer aria-selected:bg-cyan-500/10 aria-selected:text-cyan-500 transition"

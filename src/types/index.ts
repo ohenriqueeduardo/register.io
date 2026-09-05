@@ -1,11 +1,16 @@
-export type UserRole = "ADMIN" | "USER";
+export type UserRole = "MASTER_ADMIN" | "ADMIN" | "USER";
+export type UserStatus = "ACTIVE" | "SUSPENDED" | "BLOCKED" | "INACTIVE" | "ATIVO" | "PENDENTE";
 
 export interface User {
   id: string;
   nome: string;
+  username?: string | null;
   email: string;
   role: UserRole;
-  status?: "ATIVO" | "PENDENTE";
+  status?: UserStatus;
+  mustChangePassword?: boolean;
+  tokenVersion?: number;
+  lastLoginAt?: string | Date | null;
   createdAt: string | Date;
   updatedAt?: string | Date;
 }

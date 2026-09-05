@@ -10,12 +10,14 @@ export async function GET() {
 
     const prisma = getPrisma();
     const users = await prisma.user.findMany({
+      where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
         nome: true,
         email: true,
         role: true,
+        status: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -24,7 +26,7 @@ export async function GET() {
     return success(
       users.map((user) => ({
         ...user,
-        status: "ATIVO" as const,
+        status: user.status === "ACTIVE" ? ("ATIVO" as const) : ("PENDENTE" as const),
       })),
     );
   } catch (error) {
