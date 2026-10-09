@@ -107,7 +107,12 @@ export function AppSidebar({
             {filteredMenuItems.map((item) => {
               const isActive =
                 pathname === item.href ||
-                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                (item.href !== "/dashboard" &&
+                  item.href !== "/empresas" &&
+                  pathname.startsWith(item.href)) ||
+                (item.href === "/empresas" &&
+                  pathname.startsWith("/empresas") &&
+                  !pathname.startsWith("/empresas/nova"));
               const Icon = item.icon;
 
               return (

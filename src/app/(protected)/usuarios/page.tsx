@@ -82,7 +82,7 @@ export default function UsuariosPage() {
               Administradores
             </p>
             <p className="text-2xl font-black text-slate-900 dark:text-slate-50">
-              {users.filter((user) => user.role === "ADMIN").length}
+              {users.filter((user) => user.role === "ADMIN" || user.role === "MASTER_ADMIN").length}
             </p>
           </div>
           <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 p-2 text-blue-500">

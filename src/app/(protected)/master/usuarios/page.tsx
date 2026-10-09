@@ -62,7 +62,7 @@ export default function MasterUsuariosPage() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -87,11 +87,11 @@ export default function MasterUsuariosPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, roleFilter, search, statusFilter]);
 
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter, statusFilter]);
+  }, [fetchUsers]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

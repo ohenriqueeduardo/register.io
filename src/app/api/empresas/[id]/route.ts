@@ -114,7 +114,8 @@ export const PUT = withLogging(async function PUT(request: Request, context: Rou
       return failure("Empresa não encontrada.", 404);
     }
 
-    if (user.role !== "ADMIN" && currentEmpresa.createdById !== user.id) {
+    const isPrivilegedStaff = user.role === "ADMIN" || user.role === "MASTER_ADMIN";
+    if (!isPrivilegedStaff && currentEmpresa.createdById !== user.id) {
       return failure("Você não tem permissão para alterar esta empresa.", 403);
     }
 
@@ -201,7 +202,8 @@ export const DELETE = withLogging(async function DELETE(_request: Request, conte
       return failure("Empresa não encontrada.", 404);
     }
 
-    if (user.role !== "ADMIN" && currentEmpresa.createdById !== user.id) {
+    const isPrivilegedStaff = user.role === "ADMIN" || user.role === "MASTER_ADMIN";
+    if (!isPrivilegedStaff && currentEmpresa.createdById !== user.id) {
       return failure("Você não tem permissão para excluir esta empresa.", 403);
     }
 

@@ -14,7 +14,11 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("E-mail inválido."),
+  email: z
+    .string()
+    .trim()
+    .min(3, "Informe seu e-mail ou nome de usuário.")
+    .toLowerCase(),
   password: z.string().min(1, "Senha obrigatória."),
 });
 

@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 function isAuthorizedCron(authHeader: string | null, cronSecret?: string): boolean {
   if (!cronSecret) {
-    return true;
+    return process.env.NODE_ENV !== "production";
   }
 
   if (!authHeader) {
@@ -45,12 +45,13 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error("Erro no keep-alive do Supabase:", error);
+    const isDev = process.env.NODE_ENV !== "production";
+    console.error("Erro no keep-alive do Supabase:", error?.message || error);
     return Response.json(
       {
         status: "error",
         message: "Falha ao conectar com o banco de dados do Supabase.",
-        error: error.message,
+        ...(isDev ? { error: error?.message } : {}),
       },
       { status: 500 }
     );

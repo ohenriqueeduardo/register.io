@@ -64,8 +64,8 @@ export const POST = withLogging(async function POST(request: Request, context: R
     }
 
     let updateData: any = {};
-    let auditAction = `USER_${parsed.data.action}`;
-    let auditMetadata: any = { reason: parsed.data.reason || null };
+    const auditAction = `USER_${parsed.data.action}`;
+    const auditMetadata: any = { reason: parsed.data.reason || null };
 
     switch (parsed.data.action) {
       case "BLOCK":

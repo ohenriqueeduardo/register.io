@@ -1,4 +1,4 @@
-import { failure, success } from "@/lib/api-response";
+import { failure, success, handleApiError } from "@/lib/api-response";
 import { requireAuth } from "@/lib/auth";
 import { cleanCNPJ, isValidCNPJ } from "@/lib/validators/cnpj";
 import { withLogging } from "@/lib/api-middleware";
@@ -60,12 +60,12 @@ export const GET = withLogging(async function GET(_request: Request, context: Ro
       });
     } catch (err: any) {
       clearTimeout(timeout);
-      if (err.name === "AbortError") {
+      if (err?.name === "AbortError") {
         return failure("Tempo limite excedido ao consultar CNPJ.", 504);
       }
       throw err;
     }
   } catch (error) {
-    return failure("Falha interna ao consultar dados do CNPJ.", 500);
+    return handleApiError(error);
   }
 });

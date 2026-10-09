@@ -76,7 +76,9 @@ export const DELETE = withLogging(async function DELETE(request: Request) {
 
       if (empresa) {
         isAuthorizedPersistedCatalog =
-          user.role === "ADMIN" || empresa.createdById === user.id;
+          user.role === "ADMIN" ||
+          user.role === "MASTER_ADMIN" ||
+          empresa.createdById === user.id;
       }
     }
 

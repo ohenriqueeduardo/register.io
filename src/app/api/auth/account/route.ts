@@ -148,15 +148,37 @@ export async function DELETE(request: Request) {
       return failure("Senha atual incorreta.", 401);
     }
 
+    if (user.role === "MASTER_ADMIN") {
+      const masterCount = await prisma.user.count({
+        where: { role: "MASTER_ADMIN", deletedAt: null },
+      });
+
+      if (masterCount <= 1) {
+        return failure("Não é permitido apagar a única conta de Administrador Master do sistema.", 400);
+      }
+    }
+
     if (user.role === "ADMIN") {
       const adminCount = await prisma.user.count({
-        where: { role: "ADMIN" },
+        where: { role: { in: ["ADMIN", "MASTER_ADMIN"] }, deletedAt: null },
       });
 
       if (adminCount <= 1) {
         return failure("Não é permitido apagar a última conta administradora.", 400);
       }
     }
+
+    await prisma.auditLog.create({
+      data: {
+        action: "ACCOUNT_SELF_DELETED",
+        entity: "User",
+        entityId: user.id,
+        userId: user.id,
+        targetUserId: user.id,
+        status: "SUCCESS",
+        metadata: { role: user.role },
+      },
+    });
 
     await prisma.user.delete({
       where: { id: user.id },

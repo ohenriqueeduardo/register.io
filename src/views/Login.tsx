@@ -102,10 +102,10 @@ export default function Login({ allowRegistration = false }: LoginProps) {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Input E-mail */}
+            {/* Input E-mail / Usuário */}
             <div className="space-y-2">
               <Label htmlFor="email" className="font-semibold text-slate-700 dark:text-slate-300">
-                E-mail
+                E-mail ou Usuário
               </Label>
               <div className="relative">
                 <Mail
@@ -114,13 +114,15 @@ export default function Login({ allowRegistration = false }: LoginProps) {
                 />
                 <Input
                   id="email"
-                  type="email"
+                  type="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   className={`h-12 rounded-xl pl-10 bg-slate-50 text-slate-900 placeholder:text-slate-500 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 border ${
                     errors.email
                       ? "border-rose-500 focus-visible:ring-rose-500"
                       : "border-slate-200 dark:border-slate-700 focus-visible:ring-primary"
                   }`}
-                  placeholder="seu@email.com"
+                  placeholder="seu@email.com ou usuario"
                   {...register("email")}
                   disabled={isLoading}
                 />

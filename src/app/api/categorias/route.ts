@@ -41,7 +41,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await requireAuth();
+    const user = await requireAdmin();
 
     const body = await request.json();
     const parsed = categoriaSchema.safeParse(body);
@@ -57,6 +57,16 @@ export async function POST(request: Request) {
         _count: {
           select: { empresas: true },
         },
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "CREATE",
+        entity: "Categoria",
+        entityId: categoria.id,
+        userId: user.id,
+        metadata: { nome: categoria.nome },
       },
     });
 

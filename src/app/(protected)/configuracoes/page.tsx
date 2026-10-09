@@ -206,7 +206,13 @@ export default function ConfiguracoesPage() {
                   </Label>
                   <div className="mt-1 flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400">
                     <ShieldCheck size={16} />
-                    <span>{currentUser.role === "ADMIN" ? "Administrador" : "Usuário"}</span>
+                    <span>
+                      {currentUser.role === "MASTER_ADMIN"
+                        ? "Administrador Master"
+                        : currentUser.role === "ADMIN"
+                        ? "Administrador"
+                        : "Usuário"}
+                    </span>
                   </div>
                 </div>
                 <div>
