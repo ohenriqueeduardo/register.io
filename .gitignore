@@ -29,3 +29,8 @@ out
 *.njsproj
 *.sln
 *.sw?
+
+# Database backups
+backup dtb/
+*.backup.gz
+*.sql
